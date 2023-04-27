@@ -5,7 +5,9 @@
 
 # 缘起
 
-日志中心，一直是用传统的三件套`ELK`，但终究还是不理想（定制安装并非简单、需要维护索引、页面打开初始化太慢，界面操作不习惯，资源占用太厉害甚至容易崩溃），替代品总是找不到。终于，用`go`试写一个`logcenter`，结果各种优异表现确实是惊艳到了自己，故起名`glogcenter`，简称`GLC`，开仓建库<br>
+日志中心，一直是用传统的三件套`ELK`，但终究还是不理想（定制安装并非简单、需要维护索引、页面打开初始化太慢，界面操作不习惯，资源占用太厉害甚至容易崩溃，等等诸如此类），替代品非常难找。<br>
+<br>
+终于，尝试用`go`写个日志中心，结果各种优异表现令人惊艳，故起名`glogcenter`，简称`GLC`，开仓建库<br>
 <br>
 
 [![Golang](https://img.shields.io/badge/golang-1.20-brightgreen.svg)](https://golang.google.cn)
@@ -110,7 +112,7 @@ curl -X POST -d '{"system":"demo", "date":"20230101 01:02:03.456","text":"demo l
 <dependency>
     <groupId>top.gotoeasy</groupId>
     <artifactId>glc-logback-appender</artifactId>
-    <version>0.8.0</version>
+    <version>0.9.0</version>
 </dependency>
 ```
 
@@ -124,7 +126,9 @@ curl -X POST -d '{"system":"demo", "date":"20230101 01:02:03.456","text":"demo l
         <pattern><![CDATA[%p %m %n]]></pattern>
     </layout>
 </appender>
+```
 
+```xml
 <!-- logback配置例子2，发送至 rabbitmq -->
 <appender name="GLC" class="top.gotoeasy.framework.glc.logback.appender.GlcAmqpAppender">
     <amqpHost>127.0.0.1</amqpHost>                <!-- 可通过环境变量 GLC_AMQP_HOST 设定 -->
@@ -174,10 +178,14 @@ func main() {
 ### 开发版`latest`
 
 - [ ] 多语言
-- [ ] 分词优化
 - [ ] 日志审计
 - [ ] 集群支持动态删减节点（或是页面管理删除）
 
+
+### 版本`0.9.0`
+
+- [x] 增加分类(系统)检索条件，支持多系统时准确筛选
+- [x] 修复一些小瑕疵
 
 ### 版本`0.8.8`
 

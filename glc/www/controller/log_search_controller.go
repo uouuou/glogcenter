@@ -8,7 +8,7 @@ import (
 	"github.com/gotoeasy/glang/cmn"
 )
 
-// LogSearchController 日志检索（表单提交方式）
+// 日志检索（表单提交方式）
 func LogSearchController(req *gweb.HttpRequest) *gweb.HttpResult {
 	for _, s := range GetSessionid() {
 		if conf.IsEnableLogin() && req.GetFormParameter("token") == s["sessionid"] {
@@ -20,6 +20,12 @@ func LogSearchController(req *gweb.HttpRequest) *gweb.HttpResult {
 			forward := cmn.StringToBool(req.GetFormParameter("forward"), true)
 			datetimeFrom := req.GetFormParameter("datetimeFrom")
 			datetimeTo := req.GetFormParameter("datetimeTo")
+			system := req.GetFormParameter("system")
+
+			if !cmn.IsBlank(system) {
+				system = "~" + cmn.Trim(system)
+			}
+
 			eng := ldb.NewEngine(storeName)
 			rs := eng.Search(searchKey, datetimeFrom, datetimeTo, pageSize, currentId, forward)
 			return gweb.Result(rs)
