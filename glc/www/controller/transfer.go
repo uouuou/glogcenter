@@ -12,7 +12,7 @@ import (
 	"github.com/gotoeasy/glang/cmn"
 )
 
-// 转发其他GLC服务
+// TransferGlc 转发其他GLC服务
 func TransferGlc(jsonlog string) {
 	kv, err := service.GetSysmntItem(cluster.KEY_CLUSTER)
 	if kv == nil || err != nil {

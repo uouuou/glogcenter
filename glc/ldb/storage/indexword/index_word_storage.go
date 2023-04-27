@@ -3,6 +3,7 @@
  * 1）获取存储对象线程安全，带缓存无则创建有则直取，空闲超时自动关闭leveldb，再次获取时自动打开
  * 2）单线程调用设计，由日志存储器内部控制安全的调用，其他地方调用可能会有问题
  */
+
 package indexword
 
 import (
@@ -33,10 +34,10 @@ var zeroUint32Bytes []byte = cmn.Uint32ToBytes(0)
 var zeroUint16Bytes []byte = cmn.Uint16ToBytes(0) // 索引件数的key
 
 var idxMu sync.Mutex
-var mapStorage map[string](*WordIndexStorage)
+var mapStorage map[string]*WordIndexStorage
 
 func init() {
-	mapStorage = make(map[string](*WordIndexStorage))
+	mapStorage = make(map[string]*WordIndexStorage)
 	cmn.OnExit(onExit) // 优雅退出
 }
 

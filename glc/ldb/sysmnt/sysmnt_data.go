@@ -3,6 +3,7 @@
  * 1）Key接口统一为string
  * 2）Value接口统一为SysmntData，并提供默认字段方便自行使用
  */
+
 package sysmnt
 
 import (

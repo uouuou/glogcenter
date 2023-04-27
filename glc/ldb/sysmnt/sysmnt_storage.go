@@ -3,6 +3,7 @@
  * 1）提供无序的KV形式读写功能，利用leveldb自动序列化存盘
  * 2）使用需自行控制避免发生Key的冲突问题
  */
+
 package sysmnt
 
 import (
@@ -15,7 +16,7 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
-// 存储结构体
+// SysmntStorage 存储结构体
 type SysmntStorage struct {
 	subPath  string      // 存储目录下的相对路径（存放数据）
 	leveldb  *leveldb.DB // leveldb
@@ -30,7 +31,7 @@ func init() {
 	cmn.OnExit(onExit) // 优雅退出
 }
 
-// 获取存储对象，线程安全（带缓存无则创建有则直取）
+// NewSysmntStorage 获取存储对象，线程安全（带缓存无则创建有则直取）
 func NewSysmntStorage() *SysmntStorage { // 存储器，文档，自定义对象
 
 	// 缓存有则取用
@@ -82,7 +83,7 @@ func (s *SysmntStorage) autoCloseWhenMaxIdle() {
 	}
 }
 
-// 关闭Storage
+// Close 关闭Storage
 func (s *SysmntStorage) Close() {
 	if s == nil || s.closing { // 优雅退出时可能会正好nil，判断一下优雅点
 		return
@@ -137,7 +138,7 @@ func (s *SysmntStorage) DeleteStorageInfo(storeName string) error {
 	return nil
 }
 
-// 直接存入数据到leveldb
+// Put 直接存入数据到leveldb
 func (s *SysmntStorage) Put(key []byte, value []byte) error {
 	if s.closing {
 		return errors.New("current storage is closed") // 关闭中或已关闭时拒绝服务
@@ -146,7 +147,7 @@ func (s *SysmntStorage) Put(key []byte, value []byte) error {
 	return s.leveldb.Put(key, value, nil)
 }
 
-// 直接从leveldb取数据
+// Get 直接从leveldb取数据
 func (s *SysmntStorage) Get(key []byte) ([]byte, error) {
 	if s.closing {
 		return nil, errors.New("current storage is closed") // 关闭中或已关闭时拒绝服务
@@ -155,7 +156,7 @@ func (s *SysmntStorage) Get(key []byte) ([]byte, error) {
 	return s.leveldb.Get(key, nil)
 }
 
-// 直接从leveldb取数据
+// Del 直接从leveldb取数据
 func (s *SysmntStorage) Del(key []byte) error {
 	if s.closing {
 		return errors.New("current storage is closed") // 关闭中或已关闭时拒绝服务
@@ -164,7 +165,7 @@ func (s *SysmntStorage) Del(key []byte) error {
 	return s.leveldb.Delete(key, nil)
 }
 
-// 是否关闭中状态
+// IsClose 是否关闭中状态
 func (s *SysmntStorage) IsClose() bool {
 	return s.closing
 }

@@ -1,6 +1,7 @@
 /**
  * 日志仓信息
  */
+
 package sysmnt
 
 import (
@@ -79,7 +80,7 @@ func GetStorageList() *StorageResult {
 	return rs
 }
 
-// 删除指定日志仓目录
+// DeleteStorage 删除指定日志仓目录
 func DeleteStorage(name string) error {
 	// 先尝试目录改名，改成功后再删除
 	oldPath := conf.GetStorageRoot() + cmn.PathSeparator() + name

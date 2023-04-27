@@ -13,7 +13,7 @@ import (
 	"github.com/gotoeasy/glang/cmn"
 )
 
-var mapStorageHandle map[string](*LogDataStorageHandle)
+var mapStorageHandle map[string]*LogDataStorageHandle
 
 // LogDataStorageHandle 日志存储结构体
 type LogDataStorageHandle struct {
@@ -21,7 +21,7 @@ type LogDataStorageHandle struct {
 }
 
 func init() {
-	mapStorageHandle = make(map[string](*LogDataStorageHandle))
+	mapStorageHandle = make(map[string]*LogDataStorageHandle)
 }
 
 // NewLogDataStorageHandle 创建日志存储

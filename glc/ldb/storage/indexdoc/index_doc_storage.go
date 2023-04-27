@@ -29,10 +29,10 @@ type DocIndexStorage struct {
 }
 
 var idxMu sync.Mutex
-var mapStorage map[string](*DocIndexStorage)
+var mapStorage map[string]*DocIndexStorage
 
 func init() {
-	mapStorage = make(map[string](*DocIndexStorage))
+	mapStorage = make(map[string]*DocIndexStorage)
 	cmn.OnExit(onExit) // 优雅退出
 }
 

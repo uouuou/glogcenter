@@ -16,7 +16,7 @@
                         <el-icon>
                           <Search />
                         </el-icon>
-                        <span>检 索</span>                      
+                        <span>检 索</span>
                       </el-button>
                     </template>
                   </el-input>

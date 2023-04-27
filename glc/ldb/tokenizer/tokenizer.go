@@ -1,6 +1,7 @@
 /**
  * TODO 待整理
  */
+
 package tokenizer
 
 import (
