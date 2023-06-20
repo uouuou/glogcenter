@@ -121,7 +121,7 @@
               </template>
             </el-table-column>
 
-            <el-table-column v-if="systemVisible" prop="system" label="系统名" width="120" :show-overflow-tooltip="true"/>
+            <el-table-column v-if="systemVisible" prop="system" label="系统名" width="180" :show-overflow-tooltip="true"/>
             <el-table-column v-if="serverNameVisible" prop="servername" label="主机名" width="180" :show-overflow-tooltip="true"/>
             <el-table-column v-if="serverIpVisible" prop="serverip" label="主机IP" width="130" :show-overflow-tooltip="true"/>
             <el-table-column v-if="dateVisible" prop="date" label="日期时间" width="208" :show-overflow-tooltip="true"/>
