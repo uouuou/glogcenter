@@ -84,7 +84,7 @@ docker run -d -p 8080:8080 -e GLC_CLUSTER_MODE=true -e GLC_SERVER_URL=http://172
 - [x] `GLC_LOG_LEVEL`日志级别，可设定值为`debug/info/warn/error`，默认`info`
 - [x] `GLC_GOMAXPROCS`使用最大CPU数量，值不在实际范围内时按最大值看待，默认最大值，常用于`docker`方式
 
-## 命令行启动参数（适用`0.6.*`及以上版本）
+## 命令行启动参数
 - [x] 支持命令行参数`-v`查看版本
 - [x] 在Linux系统下支持命令行参数`-d`以后台方式启动
 - [x] 在Linux系统下支持命令行参数`stop`关闭程序
@@ -95,9 +95,9 @@ docker run -d -p 8080:8080 -e GLC_CLUSTER_MODE=true -e GLC_SERVER_URL=http://172
 
 ## 接口
 - [x] `/glc/v1/log/add`日志添加，`POST`，`application/json` <br>
-      字段`system`： 字符串，对应页面的`分类` <br>
+      字段`system`： 字符串，对应页面的`系统名` <br>
       字段`date`： 字符串，对应页面的`日期时间` <br>
-      字段`text`： 字符串，对应页面的`日志内容` <br>
+      字段`text`： 字符串，对应页面的`日志` <br>
 
 ```shell
 # 发送测试数据的参考脚本
@@ -112,7 +112,7 @@ curl -X POST -d '{"system":"demo", "date":"20230101 01:02:03.456","text":"demo l
 <dependency>
     <groupId>top.gotoeasy</groupId>
     <artifactId>glc-logback-appender</artifactId>
-    <version>0.9.0</version>
+    <version>0.10.0</version>
 </dependency>
 ```
 
@@ -140,7 +140,33 @@ curl -X POST -d '{"system":"demo", "date":"20230101 01:02:03.456","text":"demo l
         <pattern><![CDATA[%p %m %n]]></pattern>
     </layout>
 </appender>
+```
 
+```xml
+<!-- 一个简单的logback-spring.xml配置例子 -->
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration debug="false">
+    <appender name="CONSOLE"
+        class="ch.qos.logback.core.ConsoleAppender">
+        <Target>System.out</Target>
+        <encoder>
+            <pattern>%d-%c-%t-%5p: %m%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="GLC" class="top.gotoeasy.framework.glc.logback.appender.GlcHttpJsonAppender">
+        <glcApiUrl>http://127.0.0.1:8080/glc/v1/log/add</glcApiUrl>
+        <system>demo</system>
+        <layout>
+            <pattern><![CDATA[%p %m %n]]></pattern>
+        </layout>
+    </appender>
+
+    <root level="DEBUG">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="GLC" />
+    </root>
+</configuration>
 ```
 
 ## 使用`golang`语言的项目，提供工具包，开箱即用
@@ -181,6 +207,13 @@ func main() {
 - [ ] 日志审计
 - [ ] 集群支持动态删减节点（或是页面管理删除）
 
+
+### 版本`0.10.0`
+
+- [x] 页面优化：系统名检索条件可选择输入，可以不用敲打了
+- [x] 页面增加主机名、主机IP展示列，可配置是否显示，适用更多复杂使用场景
+- [x] 同步使用`glc-logback-appender:0.10.0`，即可自动产生主机名、主机IP信息
+- [x] 修复一些小瑕疵
 
 ### 版本`0.9.0`
 

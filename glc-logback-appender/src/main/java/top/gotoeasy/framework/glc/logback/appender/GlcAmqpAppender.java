@@ -1,7 +1,5 @@
 package top.gotoeasy.framework.glc.logback.appender;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -88,14 +86,20 @@ public class GlcAmqpAppender extends AppenderBase<ILoggingEvent> {
      * @param text 日志
      */
     protected void sendToRabbitMQ(String text) {
+        if (text == null) {
+            return; // ignore
+        }
+
         try {
             if (channel == null) {
                 initConnectionChannel();
             }
 
-            String body = "{" + encodeStr("text") + ":" + encodeStr(text.trim());
-            body += "," + encodeStr("date") + ":" + encodeStr(getDateString());
-            body += "," + encodeStr("system") + ":" + encodeStr(getSystem());
+            String body = "{\"text\":" + Util.encodeStr(text.trim());
+            body += ",\"date\":" + Util.encodeStr(Util.getDateString());
+            body += ",\"system\":" + Util.encodeStr(getSystem());
+            body += ",\"servername\":" + Util.encodeStr(Util.getServerName());
+            body += ",\"serverip\":" + Util.encodeStr(Util.getServerIp());
             body += "}";
 
             channel.basicPublish("", "glc-log-queue", null, body.getBytes("utf-8"));
@@ -231,34 +235,6 @@ public class GlcAmqpAppender extends AppenderBase<ILoggingEvent> {
         } finally {
             this.connection = null;
         }
-    }
-
-    private String encodeStr(String str) {
-        return "\"" + str.replaceAll("\"", "\\\\\"").replaceAll("\t", "\\\\t").replaceAll("\r", "\\\\r")
-                .replaceAll("\n", "\\\\n") + "\"";
-    }
-
-    private static String getDateString() {
-        SimpleDateFormat sdf = getSimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
-        return sdf.format(new Date());
-    }
-
-    private static ThreadLocal<SimpleDateFormat> threadLocal = new ThreadLocal<SimpleDateFormat>();
-    private static Object lockObject = new Object();
-
-    private static SimpleDateFormat getSimpleDateFormat(String format) {
-        SimpleDateFormat simpleDateFormat = threadLocal.get();
-        if (simpleDateFormat == null) {
-            synchronized (lockObject) {
-                if (simpleDateFormat == null) {
-                    simpleDateFormat = new SimpleDateFormat(format);
-                    simpleDateFormat.setLenient(false);
-                    threadLocal.set(simpleDateFormat);
-                }
-            }
-        }
-        simpleDateFormat.applyPattern(format);
-        return simpleDateFormat;
     }
 
 }
