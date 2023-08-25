@@ -4,10 +4,10 @@
  * 2）有关键词时检索索引
  * 3）支持指定相对ID及方向进行前后翻页检索
  */
-
 package search
 
 import (
+	"glc/conf"
 	"glc/ldb/storage"
 	"glc/ldb/storage/indexdoc"
 	"glc/ldb/storage/indexword"
@@ -18,9 +18,10 @@ import (
 )
 
 type SearchResult struct {
-	Total string                  `json:"total,omitempty"` // 日志总量件数（用10进制字符串形式以避免出现科学计数法）
-	Count string                  `json:"count,omitempty"` // 当前条件最多匹配件数（用10进制字符串形式以避免出现科学计数法）
-	Data  []*logdata.LogDataModel `json:"data,omitempty"`  // 检索结果数据（日志文档数组）
+	Total    string                  `json:"total,omitempty"`    // 日志总量件数（用10进制字符串形式以避免出现科学计数法）
+	Count    string                  `json:"count,omitempty"`    // 当前条件最多匹配件数（用10进制字符串形式以避免出现科学计数法）
+	PageSize string                  `json:"pagesize,omitempty"` // 每次检索件数
+	Data     []*logdata.LogDataModel `json:"data,omitempty"`     // 检索结果数据（日志文档数组）
 }
 
 type WidxStorage struct {
@@ -29,8 +30,8 @@ type WidxStorage struct {
 	idxwordStorage *indexword.WordIndexStorage
 }
 
-// SearchWordIndex 多关键词时计算关键词索引交集
-func SearchWordIndex(storeName string, kws []string, pageSize int, currentDocId uint32, forward bool, minDatetime string, maxDatetime string) *SearchResult {
+// 多关键词时计算关键词索引交集
+func SearchWordIndex(storeName string, kws []string, currentDocId uint32, forward bool, minDatetime string, maxDatetime string) *SearchResult {
 	storeLogData := storage.NewLogDataStorageHandle(storeName) // 数据
 
 	// 时间条件范围判断，默认全部，有检索条件时调整范围
@@ -74,11 +75,11 @@ func SearchWordIndex(storeName string, kws []string, pageSize int, currentDocId 
 		}
 		widxs = append(widxs, widxStorage)
 	}
-	return findSame(pageSize, currentDocId, forward, minDocumentId, maxDocumentId, storeLogData, widxs...)
+	return findSame(currentDocId, forward, minDocumentId, maxDocumentId, storeLogData, widxs...)
 }
 
-// SearchLogData 无关键词时走全量检索
-func SearchLogData(storeName string, pageSize int, currentDocId uint32, forward bool, minDatetime string, maxDatetime string) *SearchResult {
+// 无关键词时走全量检索
+func SearchLogData(storeName string, currentDocId uint32, forward bool, minDatetime string, maxDatetime string) *SearchResult {
 
 	var rs = new(SearchResult)                                 // 检索结果
 	storeLogData := storage.NewLogDataStorageHandle(storeName) // 数据
@@ -134,8 +135,8 @@ func SearchLogData(storeName string, pageSize int, currentDocId uint32, forward 
 			max = maxDocumentId // 最大不超出时间范围限制内的最大文档ID
 		}
 
-		if max > uint32(pageSize) {
-			min = max - uint32(pageSize) + 1
+		if max > uint32(conf.GetPageSize()) {
+			min = max - uint32(conf.GetPageSize()) + 1
 		} else {
 			min = 1
 		}
@@ -161,8 +162,8 @@ func SearchLogData(storeName string, pageSize int, currentDocId uint32, forward 
 				max = maxDocumentId // 最大不超出时间范围限制内的最大文档ID
 			}
 
-			if max > uint32(pageSize) {
-				min = max - uint32(pageSize) + 1
+			if max > uint32(conf.GetPageSize()) {
+				min = max - uint32(conf.GetPageSize()) + 1
 			} else {
 				min = 1
 			}
@@ -185,7 +186,7 @@ func SearchLogData(storeName string, pageSize int, currentDocId uint32, forward 
 				min = minDocumentId // 最小不超出时间范围限制内的最小文档ID
 			}
 
-			max = min + uint32(pageSize) - 1
+			max = min + uint32(conf.GetPageSize()) - 1
 			if max > totalCount {
 				max = totalCount
 			}
@@ -204,7 +205,7 @@ func SearchLogData(storeName string, pageSize int, currentDocId uint32, forward 
 }
 
 // 参数widxs长度要求大于1，currentDocId不传就是查第一页
-func findSame(pageSize int, currentDocId uint32, forward bool, minDocumentId uint32, maxDocumentId uint32, storeLogData *storage.LogDataStorageHandle, widxs ...*WidxStorage) *SearchResult {
+func findSame(currentDocId uint32, forward bool, minDocumentId uint32, maxDocumentId uint32, storeLogData *storage.LogDataStorageHandle, widxs ...*WidxStorage) *SearchResult {
 
 	var rs = new(SearchResult)
 	rs.Total = cmn.Uint32ToString(storeLogData.TotalCount()) // 日志总量件数
@@ -276,7 +277,7 @@ func findSame(pageSize int, currentDocId uint32, forward bool, minDocumentId uin
 				if flg {
 					rsCnt++
 					rs.Data = append(rs.Data, storeLogData.GetLogDataModel(docId))
-					if rsCnt >= pageSize {
+					if rsCnt >= conf.GetPageSize() {
 						break // 最多找一页
 					}
 				}
@@ -313,7 +314,7 @@ func findSame(pageSize int, currentDocId uint32, forward bool, minDocumentId uin
 			if flg {
 				rsCnt++
 				ary = append(ary, storeLogData.GetLogDataModel(docId))
-				if rsCnt >= pageSize {
+				if rsCnt >= conf.GetPageSize() {
 					break // 最多找一页
 				}
 			}

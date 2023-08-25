@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 	"github.com/gotoeasy/glang/cmn"
@@ -28,6 +29,11 @@ func Run() {
 	gin.SetMode(gin.ReleaseMode)                  // 开启Gin的Release模式
 
 	ginEngine := gin.Default()
+
+	// 允许跨域
+	if conf.IsEnableCors() {
+		ginEngine.Use(newCors())
+	}
 
 	// 按配置判断启用GZIP压缩
 	if conf.IsEnableWebGzip() {
@@ -87,6 +93,16 @@ func Run() {
 			path = "/**/*.png"
 		} else if cmn.Endwiths(path, ".ico") {
 			path = "/**/*.ico"
+		} else if cmn.Endwiths(path, ".svg") {
+			path = "/**/*.svg"
+		} else if cmn.Endwiths(path, ".jpg") {
+			path = "/**/*.jpg"
+		} else if cmn.Endwiths(path, ".jpeg") {
+			path = "/**/*.jpeg"
+		} else if cmn.Endwiths(path, ".json") {
+			path = "/**/*.json"
+		} else if cmn.Endwiths(path, ".xml") {
+			path = "/**/*.xml"
 		}
 
 		// controller
@@ -125,6 +141,18 @@ func Run() {
 	// 启动Web服务
 	err := httpServer.ListenAndServe()
 	if err != nil && err != http.ErrServerClosed {
-		cmn.Fatalln("%s", err) // 启动失败的话打印错误信息后退出
+		cmn.Fatalln(err.Error()) // 启动失败的话打印错误信息后退出
 	}
+}
+
+func newCors() gin.HandlerFunc {
+	return cors.New(cors.Config{
+		AllowAllOrigins:  true,
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"*"},
+		ExposeHeaders:    []string{"Content-Length", "Authorization", "Content-Type"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	},
+	)
 }

@@ -33,6 +33,7 @@ func StaticFileController(req *gweb.HttpRequest) *gweb.HttpResult {
 	contentType := getContentType(urlPath)
 	file, err := www.Static.ReadFile(getStaticFilePath(urlPath))
 	if err != nil && os.IsNotExist(err) {
+		cmn.Error("文件找不到", getStaticFilePath(urlPath), err)
 		req.ResponseData(404, contentType, cmn.StringToBytes("not found"))
 	} else {
 		req.ResponseData(200, contentType, file)
@@ -40,9 +41,12 @@ func StaticFileController(req *gweb.HttpRequest) *gweb.HttpResult {
 	return nil
 }
 
-// urlPath如[/glc/assets/index.f0b375ee.js]
+// urlPath如[/glc/assets/index.f0b375ee.js]或[/assets/index.f0b375ee.js]
 func getStaticFilePath(urlPath string) string {
-	path := cmn.SubString(urlPath, len(conf.GetContextPath()), len(urlPath))
+	path := urlPath
+	if conf.GetContextPath() != "" && cmn.Startwiths(urlPath, conf.GetContextPath()) {
+		path = cmn.SubString(urlPath, len(conf.GetContextPath()), len(urlPath))
+	}
 	return "web/dist" + path
 }
 
@@ -56,8 +60,18 @@ func getContentType(urlPath string) string {
 		return "application/x-javascript"
 	} else if cmn.Endwiths(urlPath, ".png") {
 		return "image/png"
+	} else if cmn.Endwiths(urlPath, ".jpg") || cmn.Endwiths(urlPath, ".jpeg") {
+		return "image/jpeg"
+	} else if cmn.Endwiths(urlPath, ".gif") {
+		return "image/gif"
 	} else if cmn.Endwiths(urlPath, ".ico") {
 		return "image/x-icon"
+	} else if cmn.Endwiths(urlPath, ".svg") {
+		return "image/svg+xml"
+	} else if cmn.Endwiths(urlPath, ".json") {
+		return "application/json"
+	} else if cmn.Endwiths(urlPath, ".xml") {
+		return "application/xml"
 	} else {
 		cmn.Info("未识别出ContentType，按text/html处理", urlPath)
 		return "text/html"

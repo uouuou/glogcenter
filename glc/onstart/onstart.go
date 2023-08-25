@@ -9,7 +9,6 @@ import (
 	"glc/rabbitmq"
 	"glc/www/cluster"
 	"glc/www/controller"
-	"glc/www/filter"
 	"glc/www/html"
 )
 
@@ -19,9 +18,6 @@ func Run() {
 
 		contextPath := conf.GetContextPath() // ContextPath
 
-		// 过滤器
-		gweb.RegisterFilter(filter.CrossFilter)
-
 		// Html静态文件
 		gweb.RegisterController(method.GET, contextPath+"/", html.HomeIndexHtmlController) // [响应/glc/]
 		gweb.RegisterController(method.GET, "/**/*.html", html.StaticFileController)
@@ -29,6 +25,12 @@ func Run() {
 		gweb.RegisterController(method.GET, "/**/*.js", html.StaticFileController)
 		gweb.RegisterController(method.GET, "/**/*.ico", html.StaticFileController)
 		gweb.RegisterController(method.GET, "/**/*.png", html.StaticFileController)
+		gweb.RegisterController(method.GET, "/**/*.jpg", html.StaticFileController)
+		gweb.RegisterController(method.GET, "/**/*.jpeg", html.StaticFileController)
+		gweb.RegisterController(method.GET, "/**/*.gif", html.StaticFileController)
+		gweb.RegisterController(method.GET, "/**/*.svg", html.StaticFileController)
+		gweb.RegisterController(method.GET, "/**/*.json", html.StaticFileController)
+		gweb.RegisterController(method.GET, "/**/*.xml", html.StaticFileController)
 
 		// 控制器
 		gweb.RegisterController(method.POST, contextPath+"/v1/log/add", controller.JsonLogAddController)                 // 添加日志

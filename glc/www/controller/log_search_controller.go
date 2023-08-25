@@ -21,17 +21,21 @@ func LogSearchController(req *gweb.HttpRequest) *gweb.HttpResult {
 			datetimeFrom := req.GetFormParameter("datetimeFrom")
 			datetimeTo := req.GetFormParameter("datetimeTo")
 			system := req.GetFormParameter("system")
+			loglevel := req.GetFormParameter("loglevel")
 
 			if !cmn.IsBlank(system) {
 				system = "~" + cmn.Trim(system)
 			}
+			if !cmn.IsBlank(loglevel) {
+				loglevel = "!" + cmn.Trim(loglevel)
+			}
 
 			eng := ldb.NewEngine(storeName)
 			rs := eng.Search(searchKey, system, datetimeFrom, datetimeTo, pageSize, currentId, forward)
+			rs.PageSize = cmn.IntToString(conf.GetPageSize())
 			return gweb.Result(rs)
 
 		}
 	}
-
 	return gweb.Error403() // 登录检查
 }
