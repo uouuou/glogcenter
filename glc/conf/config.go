@@ -86,8 +86,8 @@ type Config struct {
 	EnableUploadMinio    bool     `json:"enableUploadMinio" yaml:"enableUploadMinio"`       // 是否开启上传备份至MINIO服务器，默认false
 	GoMaxProcess         int      `json:"goMaxProcess" yaml:"goMaxProcess"`                 // 使用的最大CPU数量，默认是最大CPU数量（设定值不在实际数量范围是按最大看待）
 	LogLevel             string   `json:"logLevel" yaml:"logLevel"`
-	EnableCors  bool `json:"enableCors" yaml:"enableCors"`
-	PageSize int `json:"pageSize" yaml:"pageSize"`
+	EnableCors           bool     `json:"enableCors" yaml:"enableCors"`
+	PageSize             int      `json:"pageSize" yaml:"pageSize"`
 }
 
 func init() {
@@ -221,6 +221,8 @@ func init() {
 		username = user.Username
 		password = user.Password
 	}
+	pageSize = setting.PageSize
+	enableCors = setting.EnableCors
 }
 
 func GetPageSize() int {
