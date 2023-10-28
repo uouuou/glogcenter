@@ -9,6 +9,7 @@ contextPath: /glc
 enableSecurityKey: false
 securityKey: glogcenter
 headerSecurityKey: X-GLC-AUTH
+tokenSalt: glogcenter
 enableAmqpConsume: false
 enableWebGzip: false
 amqpAddr: ""

@@ -70,6 +70,7 @@ type Config struct {
 	EnableSecurityKey    bool     `json:"enableSecurityKey" yaml:"enableSecurityKey"`       //    web服务是否开启API秘钥校验，默认false
 	SecurityKey          string   `json:"securityKey" yaml:"securityKey"`                   //    web服务API秘钥的header键名
 	HeaderSecurityKey    string   `json:"headerSecurityKey" yaml:"headerSecurityKey"`       //     web服务API秘钥
+	TokenSalt            string   `json:"tokenSalt" yaml:"tokenSalt"`                       // 令牌盐
 	EnableAmqpConsume    bool     `json:"enableAmqpConsume" yaml:"enableAmqpConsume"`       //     是否开启rabbitMq消费者接收日志
 	EnableWebGzip        bool     `json:"enableWebGzip" yaml:"enableWebGzip"`               //     web服务是否开启Gzip
 	AmqpAddr             string   `json:"amqpAddr" yaml:"amqpAddr"`                         //     rabbitMq连接地址，例："amqp://user:password@ip:port/"
@@ -148,6 +149,10 @@ func init() {
 	}
 	if setting.SaveDays == 0 {
 		setting.SaveDays = 180
+		isNew = true
+	}
+	if setting.TokenSalt == "" {
+		setting.TokenSalt = "glogcenter"
 		isNew = true
 	}
 	if setting.User == nil {
