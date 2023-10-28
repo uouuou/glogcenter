@@ -10,15 +10,17 @@
 终有一日，愈发执志，以`go`之巧工，铸造新日志中心，其表现多舛，实足以令人惊艳，是以，赋名曰`glogcenter`，亦称`GLC`，开仓建库。<br>
 <br>
 当下，架库之作已可窥见，与君共享。<br>
+`（以上由GPT编辑）`
 <br>
 
+<p align="center">
+    <a href="https://golang.google.cn"><img src="https://img.shields.io/badge/golang-1.21.3-brightgreen.svg"></a>
+    <a href="https://hub.docker.com/r/gotoeasy/glc"><img src="https://img.shields.io/docker/pulls/gotoeasy/glc"></a>
+    <a href="https://github.com/gotoeasy/glogcenter/releases/latest"><img src="https://img.shields.io/github/release/gotoeasy/glogcenter.svg"></a>
+    <a href="https://github.com/gotoeasy/glogcenter/blob/master/LICENSE"><img src="https://img.shields.io/github/license/gotoeasy/glogcenter"></a>
+<p>
 
-[![Golang](https://img.shields.io/badge/golang-1.21.0-brightgreen.svg)](https://golang.google.cn)
-[![Docker Pulls](https://img.shields.io/docker/pulls/gotoeasy/glc)](https://hub.docker.com/r/gotoeasy/glc)
-[![GitHub release](https://img.shields.io/github/release/gotoeasy/glogcenter.svg)](https://github.com/gotoeasy/glogcenter/releases/latest)
-[![License](https://img.shields.io/github/license/gotoeasy/glogcenter)](https://github.com/gotoeasy/glogcenter/blob/master/LICENSE)
 <br>
-
 <br>
 国外仓库地址： https://github.com/gotoeasy/glogcenter <br>
 国内(仅同步)： https://gitee.com/gotoeasy/glogcenter
@@ -52,8 +54,8 @@
 
 ## `docker`单机部署模式简易示例
 ```shell
-# 简单示例
-docker run -d -p 8080:8080 gotoeasy/glc
+# 快速体验（其中通过GLC_TEST_MODE=true开启测试模式，页面上会显示生成测试数据的按钮，方便测试或快速体验）
+docker run -d -p 8080:8080 -e GLC_TEST_MODE=true gotoeasy/glc
 
 # 外挂数据目录
 docker run -d -p 8080:8080 -v /glc:/glogcenter gotoeasy/glc
@@ -86,10 +88,12 @@ docker run -d -p 8080:8080 -e GLC_CLUSTER_MODE=true -e GLC_SERVER_URL=http://172
 
 ## `docker`启动环境变量
 - [x] `GLC_STORE_NAME_AUTO_ADD_DATE`日志仓是否自动按日存储，默认`true`
-- [x] `GLC_SAVE_DAYS`日志仓按日存储自动维护时的保留天数(`0~180`)，`0`表示不自动删除，默认`180`天
+- [x] `GLC_SAVE_DAYS`日志仓按日存储自动维护时的保留天数(有效范围`0~1200`)，`0`表示不自动删除，默认`180`天
+- [x] `GLC_SEARCH_MULIT_LINE`，是否对日志列的全部行进行索引检索，默认`false`仅第一行
 - [x] `GLC_ENABLE_LOGIN`是否开启用户密码登录功能，默认`false`
 - [x] `GLC_USERNAME`查询界面登录用的用户名，默认`glc`
 - [x] `GLC_PASSWORD`查询界面登录用的密码，默认`GLogCenter100%666`
+- [x] `GLC_TOKEN_SALT`用以生成令牌的字符串令牌盐，开启登录功能时建议设定提高安全性，默认空白
 - [x] `GLC_ENABLE_SECURITY_KEY`日志添加的接口是否开启API秘钥校验，默认`false`
 - [x] `GLC_HEADER_SECURITY_KEY`API秘钥的`header`键名，默认`X-GLC-AUTH`
 - [x] `GLC_SECURITY_KEY`API秘钥，默认`glogcenter`
@@ -103,6 +107,7 @@ docker run -d -p 8080:8080 -e GLC_CLUSTER_MODE=true -e GLC_SERVER_URL=http://172
 - [x] `GLC_CLUSTER_URLS`集群模式时的关联节点服务地址，多个时`;`分隔，默认空白
 - [x] `GLC_LOG_LEVEL`日志级别，可设定值为`debug/info/warn/error`，默认`info`
 - [x] `GLC_GOMAXPROCS`使用最大CPU数量，值不在实际范围内时按最大值看待，默认最大值，常用于`docker`方式
+- [x] `GLC_TEST_MODE`是否开启测试模式，开启时显示生成测试数据的按钮，供测试或快速体验用，默认`false`
 
 
 ## 接口
@@ -130,7 +135,7 @@ curl -X POST -d '{"system":"demo", "date":"2023-01-01 01:02:03.456","text":"demo
 <dependency>
     <groupId>top.gotoeasy</groupId>
     <artifactId>glc-logback-appender</artifactId>
-    <version>0.11.1</version>
+    <version>0.12.0</version>
 </dependency>
 ```
 
@@ -189,30 +194,31 @@ curl -X POST -d '{"system":"demo", "date":"2023-01-01 01:02:03.456","text":"demo
 
 ## 使用`golang`语言的项目，提供工具包，开箱即用
 ```shell
-# 引入工具包
-go get github.com/gotoeasy/glang
-
-# 按需设定环境变量
+# 方式1）通过环境变量自动配置，程序直接使用cmn.Debug(...)写日志即可
+export GLC_ENABLE=true # 此配置默认false，要生效必须配置为true
 export GLC_API_URL='http://127.0.0.1:8080/glc/v1/log/add'
 export GLC_API_KEY='X-GLC-AUTH:glogcenter'
 export GLC_SYSTEM=demo
-export GLC_ENABLE=true
-export GLC_LOG_LEVEL=debug # 日志级别（trace/debug/info/warn/error/fatal）
+export GLC_LOG_LEVEL=debug # 日志级别（debug/info/warn/error）
 ```
 
 ```golang
-// 方式1： 通过 cmn.Debug(...)、cmn.Info(...)等方式，打印日志的同时发送至日志中心
-// 方式2： 通过 cmn.NewGLogCenterClient()创建客户端对象后使用
-//        更多内容详见文档 https://pkg.go.dev/github.com/gotoeasy/glang
-
+// 方式2） 使用前通过程序cmn.SetGlcClient(...)手动配置初始化
 import "github.com/gotoeasy/glang/cmn"
 
 func main() {
-    cmn.Info("启动WEB服务")
-    err := cmn.NewFasthttpServer().Start()
-    if err != nil {
-        cmn.Fatalln("启动失败", err)
-    }
+    // 这里用手动初始化替代环境变量自动配置方式，更多选项详见GlcOptions字段说明
+    cmn.SetGlcClient(cmn.NewGlcClient(&cmn.GlcOptions{
+        ApiUrl:      "http://ip:port/glc/v1/log/add",
+        Enable:      true,
+    }))
+
+    cmn.Debug("这是Debug级别日志")
+    cmn.Info("这是Info级别日志", "多个参数", "会被拼接")
+    gd := &cmn.GlcData{TraceId: "1234567890"} // 跟踪码相同的日志，传入该参数即可
+    cmn.Warn("这里的GlcData类型参数都不会打印", "gd只起传值作用", gd)
+    cmn.Error("gd参数顺序无关", gd, "用法如同log库，但对GlcData做了特殊的判断处理")
+    cmn.WaitGlcFinish() // 停止接收新日志，等待日志都发送完成，常在退出前调用
 }
 ```
 
@@ -224,6 +230,41 @@ func main() {
 - [ ] 日志审计
 - [ ] 集群支持动态删减节点（或是页面管理删除）
 
+
+### 版本`0.12.1`
+
+- [x] 新增`GLC_TOKEN_SALT`令牌盐环境变量，默认空串。如果日志内容比较敏感，应该修改用户密码开启登录功能，同时建议设定令牌盐，提高系统安全性
+- [x] 新增`GLC_TEST_MODE`是否开启测试模式的开关，开启后将显示生成测试数据用的按钮，供测试或快速体验用，默认`false`
+- [x] 优化改善
+
+### 版本`0.12.0`
+
+- [x] 增加配置开关`GLC_SEARCH_MULIT_LINE`，设定为`true`时，支持对日志列的全部行进行索引和检索，默认`false`。注意：不会对历史数据进行重新索引，也就是说，设定为`true`时，新加入的日志会做多行索引，但历史数据如果没有多行索引的仍旧没法进行多行检索
+- [x] 同步升级`glc-logback-appender`，增加过滤器类`GlcFilter`用以生成客户端IP和跟踪码，可按需配置使用
+
+<details>
+<summary><strong><mark>更多历史版本更新履历</mark></strong></summary> 
+
+### 版本`0.11.7`
+
+- [x] 增加支持开始/停止自动查询，观察实时日志时实用
+
+### 版本`0.11.6`
+
+- [x] 升级使用`Go1.21.3`，一波安全更新
+- [x] 增加`robots.txt`，拒绝爬虫爬取内容
+- [x] 其他一些细节改善
+
+### 版本`0.11.5`
+
+- [x] 升级使用`Go1.21.1`
+- [x] 更新升级依赖包，避免潜在问题
+- [x] 前端页面细节改善
+
+### 版本`0.11.4`
+
+- [x] 支持日志级别多选条件，想排除某种级别进行检索时会很实用
+- [x] 改善前端进一步提高使用体验
 
 ### 版本`0.11.3`
 
@@ -244,9 +285,6 @@ func main() {
 - [x] 前端全面重构改良，支持表格列宽、位置、显示隐藏等各种个性化设定
 - [x] 新增`GLC_ENABLE_CORS`参数配置是否允许跨域，默认`false`，方便系统间对接
 - [x] 新增`GLC_PAGE_SIZE`参数配置每次检索件数，默认`100`（有效范围`1~1000`）
-
-<details>
-<summary><strong><mark>更多历史版本更新履历</mark></strong></summary> 
 
 ### 版本`0.10.2`
 

@@ -3,6 +3,7 @@ package onstart
 import (
 	"fmt"
 	"glc/conf"
+	"glc/ver"
 	"os"
 	"os/exec"
 	"os/user"
@@ -47,9 +48,24 @@ func init() {
 		os.Exit(0)
 	}
 
+	// 【alpine以外未足够测试，暂且默认支持alpine容器及window开发调试，可按需注释掉】
+	if !cmn.IsWin() {
+		info, _ := cmn.MeasureHost()
+		if info == nil || !cmn.ContainsIngoreCase(info.Platform, "alpine") {
+			fmt.Printf("%s\n", info.Platform)
+			os.Exit(0)
+		}
+	}
+
 	// 其余参数仅支持linux
 	if !cmn.IsLinux() {
 		return
+	}
+
+	// 端口冲突时退出
+	if cmn.IsPortOpening("8080") {
+		fmt.Printf("%s\n", "port 8080 conflict, startup failed.")
+		os.Exit(0)
 	}
 
 	// 自动判断创建目录

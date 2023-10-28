@@ -25,8 +25,8 @@
       </template>
     </GxToolbar>
 
-    <GxTable ref="table" v-loading="showTableLoadding" stripe :enable-header-contextmenu="false" :tid="tid"
-      :data="tableData" :height="tableHeight" class="c-gx-table c-glc-table" row-key="id">
+    <GxTable ref="table" v-loading="showTableLoadding" scrollbar-always-on stripe :enable-header-contextmenu="false"
+      :tid="tid" :data="tableData" :height="tableHeight" class="c-gx-table c-glc-table" row-key="id">
       <template #$operation="{ row }">
         <el-button size="small" type="warning" @click="remove(row)">删除</el-button>
       </template>
@@ -61,6 +61,8 @@ const info = ref(''); // 底部提示信息
 
 // 初期默认检索
 onMounted(() => {
+  const configStore = $emitter.emit('$table:config', { id: tid.value });
+  !configStore.columns.length && $emitter.emit('$table:config', { id: tid.value, update: true }); // 首次使用开启默认布局
   search()
 });
 
@@ -84,23 +86,25 @@ function search() {
   });
 }
 
-function remove(row) {
+async function remove(row) {
   // 日志仓删除
-  const url = `/v1/store/delete`;
-  $post(url, { storeName: row.name }, null, { 'Content-Type': 'application/x-www-form-urlencoded' }).then(rs => {
-    console.log(rs)
-    if (rs.success) {
-      $msg.info(`已删除日志仓 ${row.name}`);
-    } else if (rs.code == 403) {
-      userLogout(); // 403 时登出
-      router.push('/login');
-    } else {
-      $msg.error(rs.message);
-    }
-  }).finally(() => {
-    showTableLoadding.value = false;
-  });
-
+  if (await $msg.confirm(`确定要删除日志仓 ${row.name} 吗？`)) {
+    const url = `/v1/store/delete`;
+    $post(url, { storeName: row.name }, null, { 'Content-Type': 'application/x-www-form-urlencoded' }).then(rs => {
+      console.log(rs)
+      if (rs.success) {
+        $msg.info(`已删除日志仓 ${row.name}`);
+        search();
+      } else if (rs.code == 403) {
+        userLogout(); // 403 时登出
+        router.push('/login');
+      } else {
+        $msg.error(rs.message);
+      }
+    }).finally(() => {
+      showTableLoadding.value = false;
+    });
+  }
 }
 
 </script>

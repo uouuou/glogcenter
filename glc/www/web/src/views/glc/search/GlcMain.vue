@@ -17,8 +17,8 @@
               </el-select>
             </el-form-item>
             <el-form-item label="日志级别">
-              <el-select v-model="formData.loglevel" :multiple="false" clearable :reserve-keyword="true"
-                style="width:420px;" placeholder="请选择...">
+              <el-select v-model="formData.loglevel" multiple clearable :reserve-keyword="true" style="width:420px;"
+                placeholder="请选择...">
                 <el-option label="ERROR" value="error" />
                 <el-option label="WARN" value="warn" />
                 <el-option label="INFO" value="info" />
@@ -35,6 +35,17 @@
       </template>
 
       <template #right>
+        <el-tooltip v-if="showTestBtn" content="生成测试数据" placement="top">
+          <el-button circle @click="genTestData">
+            <SvgIcon name="quick" />
+          </el-button>
+        </el-tooltip>
+        <el-tooltip :content="autoSearchMode ? '停止自动查询' : '开始自动查询'" placement="top">
+          <el-button circle @click="switchAutoSearchMode">
+            <SvgIcon v-if="!autoSearchMode" name="play" />
+            <SvgIcon v-if="autoSearchMode" name="stop" />
+          </el-button>
+        </el-tooltip>
         <el-tooltip content="缩放" placement="top">
           <el-button circle @click="emitter.emit('main:switchMaximizePage')">
             <SvgIcon name="zoom" />
@@ -49,8 +60,9 @@
       </template>
     </GxToolbar>
 
-    <GxTable ref="table" v-loading="showTableLoadding" :enable-header-contextmenu="false" :enable-first-expand="true"
-      stripe :tid="tid" :data="tableData" :height="tableHeight" class="c-gx-table c-glc-table" row-key="id">
+    <GxTable ref="table" v-loading="showTableLoadding" scrollbar-always-on :enable-header-contextmenu="false"
+      :enable-first-expand="true" stripe :tid="tid" :data="tableData" :height="tableHeight" class="c-gx-table c-glc-table"
+      row-key="id">
     </GxTable>
 
     <div>
@@ -76,8 +88,10 @@ const opt = {
 };
 const { formData, visible, tableData, tableHeight, pageSettingStore, showTableLoadding } = usePageMainHooks(opt);
 
+const showTestBtn = ref(false); // 是否显示生成测试数据按钮
+const autoSearchMode = ref(false); // 自动查询
 const table = ref(); // 表格实例
-const tid = ref('glcMain'); // 表格ID
+const tid = ref('glcSearchMain'); // 表格ID
 const info = ref(''); // 底部提示信息
 const storageOptions = ref([]) // 日志仓
 const systemSet = new Set();
@@ -168,7 +182,8 @@ const shortcuts = ref([
 
 // 初期默认检索
 onMounted(() => {
-  showTableLoadding.value = true;
+  const configStore = $emitter.emit('$table:config', { id: tid.value });
+  !configStore.columns.length && $emitter.emit('$table:config', { id: tid.value, update: true }); // 首次使用开启默认布局
   // 日志仓列表查询
   const url = `/v1/store/names`;
   $post(url, {}, null, { 'Content-Type': 'application/x-www-form-urlencoded' }).then(rs => {
@@ -182,6 +197,11 @@ onMounted(() => {
       userLogout(); // 403 时登出
       router.push('/login');
     }
+  });
+
+  // 查询是否测试模式
+  $post('/v1/store/mode', {}, null, { 'Content-Type': 'application/x-www-form-urlencoded' }).then(rs => {
+    showTestBtn.value = rs.success && rs.result
   });
 
   // 滚动底部触发检索更多
@@ -198,14 +218,35 @@ onMounted(() => {
   search();
 });
 
+// 生成测试数据
+function genTestData() {
+  $post('/v1/log/addTestData', {}, null, { 'Content-Type': 'application/x-www-form-urlencoded' }).then(rs => {
+    $msg.info(rs.message);
+  });
+}
+
+function isAutoSearchMode() {
+  return autoSearchMode.value
+}
+
+function switchAutoSearchMode(changMode = true) {
+  changMode && (autoSearchMode.value = !autoSearchMode.value);
+  if (autoSearchMode.value) {
+    search();
+    setTimeout(() => {
+      isAutoSearchMode() && switchAutoSearchMode(false);
+    }, 5000);
+  }
+}
+
 function search() {
-  showTableLoadding.value = true;
+  autoSearchMode.value ? (showTableLoadding.value = false) : (showTableLoadding.value = true);
   const url = `/v1/log/search`;
   const data = {};
   data.searchKey = formData.value.searchKeys;
   data.storeName = formData.value.storage;
   data.system = formData.value.system;
-  data.loglevel = formData.value.loglevel;
+  data.loglevel = (formData.value.loglevel || []).join(',');
   data.datetimeFrom = (formData.value.datetime || ['', ''])[0];
   data.datetimeTo = (formData.value.datetime || ['', ''])[1];
 
@@ -229,6 +270,7 @@ function search() {
           info.value = `日志总量 ${rs.result.total} 条，当前条件最多匹配 ${rs.result.count} 条，正展示前 ${tableData.value.length} 条`
         }
       });
+
     } else if (rs.code == 403) {
       userLogout(); // 403 时登出
       router.push('/login');
@@ -251,7 +293,7 @@ function searchMore() {
   data.searchKey = formData.value.searchKeys;
   data.storeName = formData.value.storage;
   data.system = formData.value.system;
-  data.loglevel = formData.value.loglevel;
+  data.loglevel = (formData.value.loglevel || []).join(',');
   data.datetimeFrom = (formData.value.datetime || ['', ''])[0];
   data.datetimeTo = (formData.value.datetime || ['', ''])[1];
   data.forward = true

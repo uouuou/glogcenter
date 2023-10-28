@@ -89,6 +89,8 @@ func Run() {
 			path = "/**/*.css"
 		} else if cmn.Endwiths(path, ".js") {
 			path = "/**/*.js"
+		} else if cmn.Endwiths(path, ".txt") {
+			path = "/**/*.txt"
 		} else if cmn.Endwiths(path, ".png") {
 			path = "/**/*.png"
 		} else if cmn.Endwiths(path, ".ico") {
@@ -141,7 +143,7 @@ func Run() {
 	// 启动Web服务
 	err := httpServer.ListenAndServe()
 	if err != nil && err != http.ErrServerClosed {
-		cmn.Fatalln(err.Error()) // 启动失败的话打印错误信息后退出
+		cmn.Error(err.Error()) // 启动失败的话打印错误信息后退出
 	}
 }
 

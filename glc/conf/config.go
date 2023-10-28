@@ -49,6 +49,9 @@ var enableUploadMinio bool
 var goMaxProcess int
 var enableCors bool
 var pageSize int
+var mulitLineSearch bool
+var testMode bool
+var tokenSalt string
 
 type User struct {
 	Username string `json:"username" yaml:"username"`
@@ -224,7 +227,22 @@ func init() {
 	pageSize = setting.PageSize
 	enableCors = setting.EnableCors
 }
+// 取配置： 令牌盐，可通过环境变量“GLC_TOKEN_SALT”设定，默认“”
+func GetTokenSalt() string {
+	return tokenSalt
+}
 
+// 取配置： 是否测试模式，可通过环境变量“GLC_TEST_MODE”设定，默认false
+func IsTestMode() bool {
+	return testMode
+}
+
+// 取配置： 是否检索日志的全部行，可通过环境变量“GLC_SEARCH_MULIT_LINE”设定，默认false
+func IsMulitLineSearch() bool {
+	return mulitLineSearch
+}
+
+// 取配置： 每次检索件数，可通过环境变量“GLC_PAGE_SIZE”设定，默认100（有效范围1~1000）
 func GetPageSize() int {
 	return pageSize
 }
@@ -338,6 +356,12 @@ func GetPassword() string {
 
 // 取配置： 日志分仓时的保留天数(0~180)，0表示不自动删除，可通过环境变量“GLC_SAVE_DAYS”设定，默认180天
 func GetSaveDays() int {
+	if saveDays < 0 {
+		saveDays = 0
+	}
+	if saveDays > 1200 {
+		saveDays = 1200
+	}
 	return saveDays
 }
 

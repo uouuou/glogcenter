@@ -23,6 +23,7 @@ func Run() {
 		gweb.RegisterController(method.GET, "/**/*.html", html.StaticFileController)
 		gweb.RegisterController(method.GET, "/**/*.css", html.StaticFileController)
 		gweb.RegisterController(method.GET, "/**/*.js", html.StaticFileController)
+		gweb.RegisterController(method.GET, "/**/*.txt", html.StaticFileController)
 		gweb.RegisterController(method.GET, "/**/*.ico", html.StaticFileController)
 		gweb.RegisterController(method.GET, "/**/*.png", html.StaticFileController)
 		gweb.RegisterController(method.GET, "/**/*.jpg", html.StaticFileController)
@@ -34,13 +35,16 @@ func Run() {
 
 		// 控制器
 		gweb.RegisterController(method.POST, contextPath+"/v1/log/add", controller.JsonLogAddController)                 // 添加日志
+		gweb.RegisterController(method.POST, contextPath+"/v1/log/addTestData", controller.JsonLogAddTestDataController) // 添加测试日志（仅测试模式有效）
 		gweb.RegisterController(method.POST, contextPath+"/v1/log/transferAdd", controller.JsonLogTransferAddController) // 日志数据转发添加日志
 		gweb.RegisterController(method.POST, contextPath+"/v1/log/search", controller.LogSearchController)               // 查询日志
 		gweb.RegisterController(method.POST, contextPath+"/v1/store/names", controller.StorageNamesController)           // 查询日志仓名称列表
 		gweb.RegisterController(method.POST, contextPath+"/v1/store/list", controller.StorageListController)             // 查询日志仓信息列表
 		gweb.RegisterController(method.POST, contextPath+"/v1/store/delete", controller.StorageDeleteController)         // 删除日志仓
+		gweb.RegisterController(method.POST, contextPath+"/v1/store/mode", controller.TestModeController)                // 查询是否测试模式
 		gweb.RegisterController(method.POST, contextPath+"/v1/user/enableLogin", controller.IsEnableLoginController)     // 查询是否开启用户密码登录功能
 		gweb.RegisterController(method.POST, contextPath+"/v1/user/login", controller.LoginController)                   // Login
+		gweb.RegisterController(method.POST, contextPath+"/v1/version/info", controller.VersionController)               // 查询版本信息
 
 		// 集群操作接口
 		gweb.RegisterController(method.POST, contextPath+"/sys/cluster/info", controller.ClusterGetClusterInfoController)   // 获取集群信息

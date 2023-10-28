@@ -2,7 +2,7 @@
   <GxToolbar :height="themeStore.headerHeight">
     <template #left>
       <div style="display:flex;align-items:center;margin-left:8px;line-height: 30px;">
-        <div style="width: 34px;color:white;text-align:center;cursor:pointer;" @click="clickLogo">
+        <div :title="verInfo" style="width: 34px;color:white;text-align:center;cursor:pointer;" @click="clickLogo">
           <img src="/image/glc.png" style="width:34px;margin-top:9px;" />
         </div>
         <div style="text-align:center;">
@@ -23,7 +23,7 @@ import { gxUtil, useThemeStore, useTokenStore } from '~/pkgs';
 import { userLogout } from '~/api';
 
 const router = useRouter();
-
+const verInfo = ref('');
 const tokenStore = useTokenStore();
 const themeStore = useThemeStore();
 const headerHeight = computed(() => `${themeStore.headerHeight}px`);
@@ -61,6 +61,10 @@ const svgLogoColor = computed(() => {
   return '#eeeeee';
 });
 
+onMounted(() => {
+  checkVersion();
+});
+
 async function logout() {
   if (await $msg.confirm('确定要退出系统吗？')) {
     userLogout();
@@ -69,8 +73,29 @@ async function logout() {
 }
 
 const clickLogo = () => {
-  window.open('https://github.com/gotoeasy/glogcenter', 'glc');
+  window.open('https://github.com/gotoeasy/glogcenter', '_blank');
 };
+
+function checkVersion() {
+  if (!window.$checkVersionDone) {
+    window.$checkVersionDone = true;
+    // 从后台服务读取当前运行版本，避免多处维护版本号
+    $post('/v1/version/info', {}, null, { 'Content-Type': 'application/x-www-form-urlencoded' }).then(rs => {
+      if (rs.success) {
+        verInfo.value = rs.result.version
+        // 有新版本时，左上角图标鼠标悬停显示提示（注：最新版本号的查询服务并不保证随时可用）
+        fetch(`https://glc.gotoeasy.top/glogcenter/current/version.json?v=${verInfo.value}`)
+          .then(response => response.json())
+          .then(data => {  // 最新版本（服务不保证可用，可能查不到，仅查到有新版本时更新tip）
+            if (data.version && verInfo.value < data.version) {
+              verInfo.value = `当前版本 ${verInfo.value} ，有新版本 ${data.version} 可更新`
+            }
+          })
+          .catch(e => console.log(e));
+      }
+    });
+  }
+}
 
 </script>
 
