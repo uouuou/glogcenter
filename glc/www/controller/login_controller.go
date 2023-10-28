@@ -53,7 +53,7 @@ func createSessionid() []map[string]string {
 		ymd := com.GetYyyymmdd(0)
 		by1 := md5.Sum(cmn.StringToBytes(user.Username + ymd))
 		by2 := md5.Sum(cmn.StringToBytes(ymd + conf.GetPassword()))
-		by3 := md5.Sum(cmn.StringToBytes(ymd + "添油" + conf.GetUsername() + "加醋" + conf.GetPassword()+ conf.GetTokenSalt()))// 增加配置的令牌盐
+		by3 := md5.Sum(cmn.StringToBytes(ymd + "添油" + conf.GetUsername() + "加醋" + conf.GetPassword() + conf.GetTokenSalt())) // 增加配置的令牌盐
 		str1 := hex.EncodeToString(by1[:])
 		str2 := hex.EncodeToString(by2[:])
 		str3 := hex.EncodeToString(by3[:])
@@ -62,6 +62,6 @@ func createSessionid() []map[string]string {
 	return sessionid
 }
 
-func GetSessionid() string {
+func GetSessionid() []map[string]string {
 	return sessionid
 }

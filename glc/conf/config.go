@@ -95,8 +95,6 @@ type Config struct {
 
 func init() {
 	var isNew bool
-	// 默认INFO级别日志
-	cmn.SetLogLevel("INFO")
 	var setting Config
 	config, err := os.ReadFile("./config/config.yaml")
 	if err != nil {
@@ -190,7 +188,6 @@ func init() {
 			cmn.Error("写入配置文件失败", err)
 		}
 	}
-	cmn.SetLogLevel(setting.LogLevel)
 	storeRoot = setting.StoreRoot
 	storeChanLength = setting.StoreChanLength
 	maxIdleTime = setting.MaxIdleTime
@@ -227,6 +224,7 @@ func init() {
 	pageSize = setting.PageSize
 	enableCors = setting.EnableCors
 }
+
 // 取配置： 令牌盐，可通过环境变量“GLC_TOKEN_SALT”设定，默认“”
 func GetTokenSalt() string {
 	return tokenSalt
