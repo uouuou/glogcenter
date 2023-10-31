@@ -12,9 +12,11 @@ import (
 )
 
 var sessionid []map[string]string
+var catch *cmn.Cache
 
 func init() {
 	if conf.IsEnableLogin() {
+		catch = cmn.NewCache(time.Minute * 15)
 		sessionid = createSessionid()
 		go func() {
 			ticker := time.NewTicker(time.Hour) // 一小时更新一次
@@ -27,9 +29,24 @@ func init() {
 }
 
 func LoginController(req *gweb.HttpRequest) *gweb.HttpResult {
+
+	if !InWhiteList(req) && InBlackList(req) {
+		return gweb.Error403() // 黑名单，访问受限
+	}
+
 	username := req.GetFormParameter("username")
 	password := req.GetFormParameter("password")
 	userList := conf.GetUserList()
+	key := getClientHash(req)
+	val, find := catch.Get(key)
+	cnt := 0
+	if find {
+		cnt = val.(int)
+		if cnt >= 5 {
+			catch.Set(key, cnt) // 还试，重新计算限制时间，再等15分钟吧
+			return gweb.Error500("连续多次失败，当前已被限制登录")
+		}
+	}
 	for _, user := range userList {
 		if username == user.Username && password == user.Password {
 			for _, s := range sessionid {
@@ -64,4 +81,64 @@ func createSessionid() []map[string]string {
 
 func GetSessionid() []map[string]string {
 	return sessionid
+}
+
+func getClientHash(req *gweb.HttpRequest) string {
+	var ary []string
+	ary = append(ary, req.GetHeader("Sec-Fetch-Site"))
+	ary = append(ary, req.GetHeader("Sec-Fetch-Dest"))
+	ary = append(ary, req.GetHeader("Sec-Ch-Ua-Mobile"))
+	ary = append(ary, req.GetHeader("Accept-Language"))
+	ary = append(ary, req.GetHeader("Accept-Encoding"))
+	ary = append(ary, req.GetHeader("X-Forwarded-For"))
+	ary = append(ary, req.GetHeader("Forwarded"))
+	ary = append(ary, req.GetHeader("Sec-Ch-Ua-Platform"))
+	ary = append(ary, req.GetHeader("User-Agent"))
+	ary = append(ary, req.GetHeader("Sec-Fetch-Mode"))
+	ary = append(ary, req.GetHeader("Sec-Ch-Ua"))
+	ary = append(ary, req.GetHeader("Referer"))
+	ary = append(ary, req.GinCtx.ClientIP())
+	return cmn.HashString(cmn.Join(ary, ","))
+}
+
+// 客户端IP是否在白名单中（内网地址总是在白名单中）
+func InWhiteList(req *gweb.HttpRequest) bool {
+	cityIp := cmn.GetCityIp(req.GinCtx.ClientIP())
+	if cmn.Contains(cityIp, "内网") {
+		return true
+	}
+	for i := 0; i < len(conf.GetWhiteList()); i++ {
+		item := conf.GetWhiteList()[i]
+		if item == "" {
+			continue
+		}
+		if cmn.Endwiths(item, ".*") {
+			item = cmn.ReplaceAll(item, "*", "") // 支持IP的最后一段使用通配符*
+		}
+		if cmn.Contains(cityIp, item) {
+			return true
+		}
+	}
+	return false
+}
+
+// 客户端IP是否在黑名单中（内网地址总是在白名单中）
+func InBlackList(req *gweb.HttpRequest) bool {
+	cityIp := cmn.GetCityIp(req.GinCtx.ClientIP())
+	for i := 0; i < len(conf.GetBlackList()); i++ {
+		item := conf.GetBlackList()[i]
+		if item == "" {
+			continue
+		}
+		if item == "*" {
+			return true
+		}
+		if cmn.Endwiths(item, ".*") {
+			item = cmn.ReplaceAll(item, "*", "") // 支持IP的最后一段使用通配符*
+		}
+		if cmn.Contains(cityIp, item) {
+			return true
+		}
+	}
+	return false
 }

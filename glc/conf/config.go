@@ -52,6 +52,8 @@ var pageSize int
 var mulitLineSearch bool
 var testMode bool
 var tokenSalt string
+var aryWhite []string
+var aryBlack []string
 
 type User struct {
 	Username string `json:"username" yaml:"username"`
@@ -230,6 +232,16 @@ func init() {
 	enableCors = setting.EnableCors
 }
 
+// 取配置： 白名单，可通过环境变量“GLC_WHITE_LIST”设定，默认“”
+func GetWhiteList() []string {
+	return aryWhite
+}
+
+// 取配置： 黑名单，可通过环境变量“GLC_BLACK_LIST”设定，默认“”
+func GetBlackList() []string {
+	return aryBlack
+}
+
 // 取配置： 令牌盐，可通过环境变量“GLC_TOKEN_SALT”设定，默认“”
 func GetTokenSalt() string {
 	return tokenSalt
@@ -249,7 +261,6 @@ func IsMulitLineSearch() bool {
 func GetPageSize() int {
 	return pageSize
 }
-
 func getPageSizeConf(n int) int {
 	if n < 1 {
 		n = 1

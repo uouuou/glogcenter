@@ -28,6 +28,9 @@ func VersionController(req *gweb.HttpRequest) *gweb.HttpResult {
 
 // StorageNamesController 查询日志仓名称列表
 func StorageNamesController(req *gweb.HttpRequest) *gweb.HttpResult {
+	if !InWhiteList(req) && InBlackList(req) {
+		return gweb.Error403() // 黑名单，访问受限
+	}
 	for _, s := range GetSessionid() {
 		if conf.IsEnableLogin() && req.GetFormParameter("token") == s["sessionid"] {
 			rs := com.GetStorageNames(conf.GetStorageRoot(), ".sysmnt")
@@ -41,6 +44,9 @@ func StorageNamesController(req *gweb.HttpRequest) *gweb.HttpResult {
 
 // StorageListController 查询日志仓信息列表
 func StorageListController(req *gweb.HttpRequest) *gweb.HttpResult {
+	if !InWhiteList(req) && InBlackList(req) {
+		return gweb.Error403() // 黑名单，访问受限
+	}
 	for _, s := range GetSessionid() {
 		if conf.IsEnableLogin() && req.GetFormParameter("token") == s["sessionid"] {
 			rs := sysmnt.GetStorageList()
@@ -53,6 +59,9 @@ func StorageListController(req *gweb.HttpRequest) *gweb.HttpResult {
 
 // StorageDeleteController 删除指定日志仓
 func StorageDeleteController(req *gweb.HttpRequest) *gweb.HttpResult {
+	if !InWhiteList(req) && InBlackList(req) {
+		return gweb.Error403() // 黑名单，访问受限
+	}
 	for _, s := range GetSessionid() {
 		if conf.IsEnableLogin() && req.GetFormParameter("token") == s["sessionid"] {
 			name := req.GetFormParameter("storeName")
