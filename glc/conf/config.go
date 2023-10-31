@@ -91,6 +91,10 @@ type Config struct {
 	MinioBucket          string   `json:"minioBucket" yaml:"minioBucket"`                   // MINIO桶名，默认“”
 	EnableUploadMinio    bool     `json:"enableUploadMinio" yaml:"enableUploadMinio"`       // 是否开启上传备份至MINIO服务器，默认false
 	GoMaxProcess         int      `json:"goMaxProcess" yaml:"goMaxProcess"`                 // 使用的最大CPU数量，默认是最大CPU数量（设定值不在实际数量范围是按最大看待）
+	AryWhite             []string `json:"aryWhite" yaml:"aryWhite"`                         // 白名单
+	AryBlack             []string `json:"aryBlack" yaml:"aryBlack"`                         // 黑名单
+	IsTestMode           bool     `json:"testMode" yaml:"testMode"`                         // 是否测试模式，默认false
+	MulitLineSearch      bool     `json:"mulitLineSearch" yaml:"mulitLineSearch"`           // 是否开启多行搜索，默认false
 	LogLevel             string   `json:"logLevel" yaml:"logLevel"`
 	EnableCors           bool     `json:"enableCors" yaml:"enableCors"`
 	PageSize             int      `json:"pageSize" yaml:"pageSize"`
@@ -230,6 +234,11 @@ func init() {
 	}
 	pageSize = setting.PageSize
 	enableCors = setting.EnableCors
+	tokenSalt = setting.TokenSalt
+	testMode = setting.IsTestMode
+	mulitLineSearch = setting.MulitLineSearch
+	aryWhite = setting.AryWhite
+	aryBlack = setting.AryBlack
 }
 
 // 取配置： 白名单，可通过环境变量“GLC_WHITE_LIST”设定，默认“”
