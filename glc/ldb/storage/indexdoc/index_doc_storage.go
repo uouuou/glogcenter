@@ -3,7 +3,6 @@
  * 1）获取存储对象线程安全，带缓存无则创建有则直取，空闲超时自动关闭leveldb，再次获取时自动打开
  * 2）单线程调用设计，由日志存储器内部控制安全的调用，其他地方调用可能会有问题
  */
-
 package indexdoc
 
 import (
@@ -29,10 +28,11 @@ type DocIndexStorage struct {
 }
 
 var idxMu sync.Mutex
-var mapStorage map[string]*DocIndexStorage
+var mapStorage map[string](*DocIndexStorage)
+var mapStorageMu sync.Mutex
 
 func init() {
-	mapStorage = make(map[string]*DocIndexStorage)
+	mapStorage = make(map[string](*DocIndexStorage))
 	cmn.OnExit(onExit) // 优雅退出
 }
 
@@ -56,6 +56,8 @@ func NewDocIndexStorage(storeName string) *DocIndexStorage { // 存储器，文�
 	}
 
 	// 缓存无则锁后创建返回并存缓存
+	mapStorageMu.Lock()                // 缓存map锁
+	defer mapStorageMu.Unlock()        // 缓存map解锁
 	idxMu.Lock()                       // 上锁
 	defer idxMu.Unlock()               // 解锁
 	cacheStore = getStorage(cacheName) // 再次尝试取用缓存中存储器
@@ -133,8 +135,10 @@ func (s *DocIndexStorage) Close() {
 		return
 	}
 
-	s.mu.Lock()         // 对象锁
-	defer s.mu.Unlock() // 对象解锁
+	mapStorageMu.Lock()         // 缓存map锁
+	defer mapStorageMu.Unlock() // 缓存map解锁
+	s.mu.Lock()                 // 对象锁
+	defer s.mu.Unlock()         // 对象解锁
 	if s.closing {
 		return
 	}
@@ -160,7 +164,10 @@ func (s *DocIndexStorage) IsClose() bool {
 
 func onExit() {
 	for k := range mapStorage {
-		mapStorage[k].Close()
+		s := mapStorage[k]
+		if s != nil {
+			s.Close()
+		}
 	}
 	cmn.Info("退出DocIndexStorage")
 }

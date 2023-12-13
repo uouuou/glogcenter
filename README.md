@@ -14,7 +14,7 @@
 <br>
 
 <p align="center">
-    <a href="https://golang.google.cn"><img src="https://img.shields.io/badge/golang-1.21.3-brightgreen.svg"></a>
+    <a href="https://golang.google.cn"><img src="https://img.shields.io/badge/golang-1.21.4-brightgreen.svg"></a>
     <a href="https://hub.docker.com/r/gotoeasy/glc"><img src="https://img.shields.io/docker/pulls/gotoeasy/glc"></a>
     <a href="https://github.com/gotoeasy/glogcenter/releases/latest"><img src="https://img.shields.io/github/release/gotoeasy/glogcenter.svg"></a>
     <a href="https://github.com/gotoeasy/glogcenter/blob/master/LICENSE"><img src="https://img.shields.io/github/license/gotoeasy/glogcenter"></a>
@@ -91,21 +91,21 @@ docker run -d -p 8080:8080 -e GLC_CLUSTER_MODE=true -e GLC_SERVER_URL=http://172
 - [x] `GLC_SAVE_DAYS`日志仓按日存储自动维护时的保留天数(有效范围`0~1200`)，`0`表示不自动删除，默认`180`天
 - [x] `GLC_SEARCH_MULIT_LINE`，是否对日志列的全部行进行索引检索，默认`false`仅第一行
 - [x] `GLC_ENABLE_LOGIN`是否开启用户密码登录功能，默认`false`
-- [x] `GLC_USERNAME`查询界面登录用的用户名，默认`glc`
-- [x] `GLC_PASSWORD`查询界面登录用的密码，默认`GLogCenter100%666`
+- [x] `GLC_USERNAME`管理员用户名，默认`glc`，从`0.13.0`版本开始，管理员新增用户及权限管理功能
+- [x] `GLC_PASSWORD`管理员密码，默认`GLogCenter100%666`
 - [x] `GLC_TOKEN_SALT`用以生成令牌的字符串令牌盐，开启登录功能时建议设定提高安全性，默认空白
 - [x] `GLC_ENABLE_SECURITY_KEY`日志添加的接口是否开启API秘钥校验，默认`false`
 - [x] `GLC_HEADER_SECURITY_KEY`API秘钥的`header`键名，默认`X-GLC-AUTH`
 - [x] `GLC_SECURITY_KEY`API秘钥，默认`glogcenter`
 - [x] `GLC_ENABLE_CORS`是否允许跨域，默认`false`
 - [x] `GLC_PAGE_SIZE`每次检索件数，默认`100`（有效范围`1~1000`）
+- [x] `GLC_ENABLE_WEB_GZIP`网页服务是否开启压缩，默认`false`
 - [x] `GLC_ENABLE_AMQP_CONSUME`是否开启`rabbitMq`消费者接收日志，默认`false`
 - [x] `GLC_AMQP_ADDR`消息队列`rabbitMq`连接地址，例：`amqp://user:password@ip:port/`，默认空白
 - [x] `GLC_AMQP_JSON_FORMAT`消息队列`rabbitMq`消息文本是否为`json`格式，默认`true`
 - [x] `GLC_CLUSTER_MODE`是否集群模式启动，默认`false`
 - [x] `GLC_SERVER_URL`集群模式时的本节点服务地址，默认空白
 - [x] `GLC_CLUSTER_URLS`集群模式时的关联节点服务地址，多个时`;`分隔，默认空白
-- [x] `GLC_LOG_LEVEL`日志级别，可设定值为`debug/info/warn/error`，默认`info`
 - [x] `GLC_GOMAXPROCS`使用最大CPU数量，值不在实际范围内时按最大值看待，默认最大值，常用于`docker`方式
 - [x] `GLC_TEST_MODE`是否开启测试模式，开启时显示生成测试数据的按钮，供测试或快速体验用，默认`false`
 - [x] `GLC_WHITE_LIST`白名单，多个用逗号分隔，黑白名单冲突时白名单优先，默认空白。可设定IP，最后段支持通配符，如`1.2.3.*`，内网IP默认都是白名单不必设定，实验性质的支持区域名称（因为IP地域查询可能有误差），如`上海市,深圳市`
@@ -120,8 +120,9 @@ docker run -d -p 8080:8080 -e GLC_CLUSTER_MODE=true -e GLC_SERVER_URL=http://172
       字段`servername`： 字符串，对应页面的`主机名` <br>
       字段`serverip`： 字符串，对应页面的`主机IP` <br>
       字段`loglevel`： 字符串，对应页面的`日志级别` <br>
-      字段`traceid`： 字符串，对应页面的`追踪ID` <br>
+      字段`traceid`： 字符串，对应页面的`追踪码` <br>
       字段`clientip`： 字符串，对应页面的`客户端IP` <br>
+      字段`user`： 字符串，对应页面的`用户` <br>
 
 ```shell
 # 发送测试数据的参考脚本
@@ -137,7 +138,7 @@ curl -X POST -d '{"system":"demo", "date":"2023-01-01 01:02:03.456","text":"demo
 <dependency>
     <groupId>top.gotoeasy</groupId>
     <artifactId>glc-logback-appender</artifactId>
-    <version>0.12.0</version>
+    <version>0.14.0</version>
 </dependency>
 ```
 
@@ -229,9 +230,34 @@ func main() {
 
 ### 开发版`latest`
 
-- [ ] 日志审计
+- [ ] 日志审计、告警
 - [ ] 集群支持动态删减节点（或是页面管理删除）
 
+
+### 版本`0.14.0`
+
+- [x] 日志新增用户字段，界面新增用户的精确检索条件，当要做特定用户维度的日志审计时，这个功能会显得非常实用
+- [x] 包`glc-logback-appender`同步升级，新增MDC存取用户的接口
+- [x] 修复已知问题
+
+
+<details>
+<summary><strong><mark>更多历史版本更新履历</mark></strong></summary> 
+
+### 版本`0.13.0`
+
+- [x] 新增用户及系统权限管理，仅管理员能操作，可控制指定用户只能访问指定系统的日志，多系统共用且有数据安全需求时尤显重要
+- [x] 升级使用`Go1.21.4`进行编译
+
+### 版本`0.12.4`
+
+- [x] 新增会话超时`GLC_SESSION_TIMEOUT`环境变量，单位为分钟，默认30分钟
+- [x] 优化检索性能，部分多选日志级别的场景，性能改善明显
+
+### 版本`0.12.3`
+
+- [x] 新增跨仓检索支持，分仓模式下有时需要逐个检索日志仓进行确认，确实累人。现在只要清空日志仓条件再选择日期范围，就可以轻松的查取目标数据
+- [x] 改善操作体验，修改页面检索条件后再滚动查询时仍旧是按原条件查询，避免新旧条件不同引发令人困惑的查询结果
 
 ### 版本`0.12.2`
 
@@ -249,9 +275,6 @@ func main() {
 
 - [x] 增加配置开关`GLC_SEARCH_MULIT_LINE`，设定为`true`时，支持对日志列的全部行进行索引和检索，默认`false`。注意：不会对历史数据进行重新索引，也就是说，设定为`true`时，新加入的日志会做多行索引，但历史数据如果没有多行索引的仍旧没法进行多行检索
 - [x] 同步升级`glc-logback-appender`，增加过滤器类`GlcFilter`用以生成客户端IP和跟踪码，可按需配置使用
-
-<details>
-<summary><strong><mark>更多历史版本更新履历</mark></strong></summary> 
 
 ### 版本`0.11.7`
 

@@ -40,6 +40,7 @@ type LogDataStorage struct {
 var zeroUint32Bytes []byte = cmn.Uint32ToBytes(0)
 var ldbMu sync.Mutex
 var mapStorage map[string](*LogDataStorage)
+var mapStorageMu sync.Mutex
 
 func init() {
 	mapStorage = make(map[string](*LogDataStorage))
@@ -66,6 +67,8 @@ func NewLogDataStorage(storeName string) *LogDataStorage { // 存储器，文档
 	}
 
 	// 缓存无则锁后创建返回并存缓存
+	mapStorageMu.Lock()                   // 缓存map锁
+	defer mapStorageMu.Unlock()           // 缓存map解锁
 	ldbMu.Lock()                          // 上锁
 	defer ldbMu.Unlock()                  // 解锁
 	cacheStore = getCacheStore(cacheName) // 再次尝试取用缓存中存储器
@@ -185,23 +188,24 @@ func (s *LogDataStorage) createInvertedIndex() int {
 	}
 
 	// 整理生成关键词
-	adds := docm.Keywords
-	adds = append(adds, docm.Tags...)
+	var adds []string
 	if docm.System != "" {
 		adds = append(adds, "~"+docm.System)
 	}
 	if docm.LogLevel != "" {
 		adds = append(adds, "!"+docm.LogLevel)
 	}
+	if docm.User != "" {
+		adds = append(adds, "@"+docm.User)
+	}
 
-	tgtStr := docm.System + " " + docm.ServerName + " " + docm.ServerIp +
-		" " + docm.ClientIp + " " + docm.TraceId + " " + docm.LogLevel + " " + docm.User + " " + docm.Module + " " + docm.Operation
+	tgtStr := docm.System + " " + docm.ServerName + " " + docm.ServerIp + " " + docm.ClientIp + " " + docm.TraceId + " " + docm.LogLevel + " " + docm.User
 	if docm.Detail != "" && conf.IsMulitLineSearch() {
 		tgtStr = tgtStr + " " + docm.Detail // 支持日志列全部行作为索引检索对象
 	} else {
 		tgtStr = tgtStr + " " + docm.Text // 日志列仅第一行作为索引检索对象
 	}
-	kws := tokenizer.CutForSearchEx(tgtStr, adds, docm.Sensitives) // 两数组参数的元素可以重复或空白，会被判断整理
+	kws := tokenizer.CutForSearchEx(tgtStr, adds, nil) // 两数组参数的元素可以重复或空白，会被判断整理
 
 	// 每个关键词都创建反向索引
 	for _, word := range kws {
@@ -281,8 +285,10 @@ func (s *LogDataStorage) Close() {
 		return
 	}
 
-	s.mu.Lock()         // 锁
-	defer s.mu.Unlock() // 解锁
+	mapStorageMu.Lock()         // 缓存map锁
+	defer mapStorageMu.Unlock() // 缓存map解锁
+	s.mu.Lock()                 // 锁
+	defer s.mu.Unlock()         // 解锁
 	if s.closing {
 		return
 	}
@@ -362,7 +368,10 @@ func (s *LogDataStorage) IsClose() bool {
 
 func onExit() {
 	for k := range mapStorage {
-		mapStorage[k].Close()
+		s := mapStorage[k]
+		if s != nil {
+			s.Close()
+		}
 	}
 	cmn.Info("退出LogDataStorage")
 }

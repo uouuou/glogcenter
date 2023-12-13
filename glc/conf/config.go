@@ -15,6 +15,11 @@ import (
 
 	"github.com/gotoeasy/glang/cmn"
 )
+const LogTransferAdd = "/v1/log/transferAdd"
+const SysUserTransferSave = "/v1/sysuser/transferSave"
+const SysUserTransferChgPsw = "/v1/sysuser/transferChgPsw"
+const SysUserTransferDel = "/v1/sysuser/transferDel"
+const UserTransferLogin = "/v1/user/transferLogin"
 
 var storeRoot string
 var storeChanLength int
@@ -37,6 +42,7 @@ var enableLogin bool
 var username string
 var password string
 var userList []User
+var sessionTimeout int
 var clusterMode bool
 var clusterUrls []string
 var enableBackup bool
@@ -98,6 +104,7 @@ type Config struct {
 	LogLevel             string   `json:"logLevel" yaml:"logLevel"`
 	EnableCors           bool     `json:"enableCors" yaml:"enableCors"`
 	PageSize             int      `json:"pageSize" yaml:"pageSize"`
+	SessionTimeout int `json:"session_timeout" yaml:"sessionTimeout"`
 }
 
 func init() {
@@ -184,6 +191,9 @@ func init() {
 		setting.PageSize = 100
 		isNew = true
 	}
+	if setting.SessionTimeout==0{
+		setting.SessionTimeout = 30
+	}
 	setting.PageSize = getPageSizeConf(setting.PageSize)
 	if setting.LogLevel == "" {
 		setting.LogLevel = "INFO"
@@ -239,6 +249,12 @@ func init() {
 	mulitLineSearch = setting.MulitLineSearch
 	aryWhite = setting.AryWhite
 	aryBlack = setting.AryBlack
+	sessionTimeout = setting.SessionTimeout
+}
+
+// 取配置： 登录会话超时时间，可通过环境变量“GLC_SESSION_TIMEOUT”设定，默认“30”分钟
+func GetSessionTimeout() int {
+	return sessionTimeout
 }
 
 // 取配置： 白名单，可通过环境变量“GLC_WHITE_LIST”设定，默认“”
@@ -372,9 +388,12 @@ func GetUsername() string {
 	return username
 }
 
-// 取配置： 登录用户名，可通过环境变量“GLC_PASSWORD”设定，默认“glogcenter”
+// 存取配置： 登录用户名，可通过环境变量“GLC_PASSWORD”设定，默认“glogcenter”
 func GetPassword() string {
 	return password
+}
+func SetPassword(psw string) {
+	password = psw
 }
 
 // 取配置： 日志分仓时的保留天数(0~180)，0表示不自动删除，可通过环境变量“GLC_SAVE_DAYS”设定，默认180天

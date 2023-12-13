@@ -13,7 +13,7 @@ import (
 	"github.com/gotoeasy/glang/cmn"
 )
 
-var glcLatest string = ver.VERSION
+var glcLatest string = ""
 
 // 查询是否测试模式
 func TestModeController(req *gweb.HttpRequest) *gweb.HttpResult {
@@ -26,73 +26,101 @@ func VersionController(req *gweb.HttpRequest) *gweb.HttpResult {
 	return gweb.Result(rs)
 }
 
-// StorageNamesController 查询日志仓名称列表
+// 查询日志仓名称列表
 func StorageNamesController(req *gweb.HttpRequest) *gweb.HttpResult {
-	if !InWhiteList(req) && InBlackList(req) {
-		return gweb.Error403() // 黑名单，访问受限
+	if (!InWhiteList(req) && InBlackList(req)) || (conf.IsEnableLogin() && GetUsernameByToken(req.GetToken()) == "") {
+		return gweb.Error403() // 黑名单检查、登录检查
 	}
-	for _, s := range GetSessionid() {
-		if conf.IsEnableLogin() && req.GetFormParameter("token") == s["sessionid"] {
-			rs := com.GetStorageNames(conf.GetStorageRoot(), ".sysmnt")
-			return gweb.Result(rs)
 
-		}
-	}
-	return gweb.Error403() // 登录检查
-
+	rs := com.GetStorageNames(conf.GetStorageRoot(), ".sysmnt")
+	return gweb.Result(rs)
 }
 
-// StorageListController 查询日志仓信息列表
-func StorageListController(req *gweb.HttpRequest) *gweb.HttpResult {
-	if !InWhiteList(req) && InBlackList(req) {
-		return gweb.Error403() // 黑名单，访问受限
+// 查询系统名称列表
+func SystemNamesController(req *gweb.HttpRequest) *gweb.HttpResult {
+	if (!InWhiteList(req) && InBlackList(req)) || (conf.IsEnableLogin() && GetUsernameByToken(req.GetToken()) == "") {
+		return gweb.Error403() // 黑名单检查、登录检查
 	}
-	for _, s := range GetSessionid() {
-		if conf.IsEnableLogin() && req.GetFormParameter("token") == s["sessionid"] {
-			rs := sysmnt.GetStorageList()
-			return gweb.Result(rs)
 
-		}
-	}
-	return gweb.Error403() // 登录检查
-}
-
-// StorageDeleteController 删除指定日志仓
-func StorageDeleteController(req *gweb.HttpRequest) *gweb.HttpResult {
-	if !InWhiteList(req) && InBlackList(req) {
-		return gweb.Error403() // 黑名单，访问受限
-	}
-	for _, s := range GetSessionid() {
-		if conf.IsEnableLogin() && req.GetFormParameter("token") == s["sessionid"] {
-			name := req.GetFormParameter("storeName")
-			if name == ".sysmnt" {
-				return gweb.Error500("不能删除 .sysmnt")
-			} else if conf.IsStoreNameAutoAddDate() {
-				if conf.GetSaveDays() > 0 {
-					ymd := cmn.Right(name, 8)
-					if cmn.Len(ymd) == 8 && cmn.Startwiths(ymd, "20") {
-						msg := fmt.Sprintf("当前是日志仓自动维护模式，最多保存 %d 天，不支持手动删除", conf.GetSaveDays())
-						return gweb.Error500(msg)
+	if conf.IsEnableLogin() {
+		username := GetUsernameByToken(req.GetToken())
+		mnt := sysmnt.NewSysmntStorage()
+		if username == conf.GetUsername() {
+			names := mnt.GetSysUsernames()
+			var all []string
+			var m map[string]bool = make(map[string]bool)
+			for i := 0; i < len(names); i++ {
+				user := mnt.GetSysUser(names[i])
+				if user != nil && user.Systems != "*" {
+					ary := cmn.Split(user.Systems, ",")
+					for j := 0; j < len(ary); j++ {
+						if !m[cmn.ToLower(ary[j])] {
+							m[cmn.ToLower(ary[j])] = true
+							all = append(all, ary[j])
+						}
 					}
 				}
-			} else if name == "logdata" {
-				return gweb.Error500("日志仓 " + name + " 正在使用，不能删除")
 			}
-
-			if status.IsStorageOpening(name) {
-				return gweb.Error500("日志仓 " + name + " 正在使用，不能删除")
+			return gweb.Result(all)
+		} else {
+			user := mnt.GetSysUser(username)
+			if user != nil && user.Systems != "*" {
+				return gweb.Result(cmn.Split(user.Systems, ",")) // 管理员及全部权限的用户以外，按设定的系统返回
 			}
-
-			err := sysmnt.DeleteStorage(name)
-			if err != nil {
-				cmn.Error("日志仓", name, "删除失败", err)
-				return gweb.Error500("日志仓 " + name + " 正在使用，不能删除")
-			}
-			return gweb.Ok()
-
 		}
 	}
-	return gweb.Error403() // 登录检查
+
+	return gweb.Ok() // 都有权限，不返回结果
+}
+
+// 查询日志仓信息列表
+func StorageListController(req *gweb.HttpRequest) *gweb.HttpResult {
+	token := req.GetToken()
+	if (!InWhiteList(req) && InBlackList(req)) || (conf.IsEnableLogin() && GetUsernameByToken(token) == "") {
+		return gweb.Error403() // 黑名单检查、登录检查
+	}
+	if conf.IsEnableLogin() {
+		catchSession.Set(token, GetUsernameByToken(token)) // 会话重新计时
+	}
+
+	rs := sysmnt.GetStorageList()
+	return gweb.Result(rs)
+}
+
+// 删除指定日志仓
+func StorageDeleteController(req *gweb.HttpRequest) *gweb.HttpResult {
+	if (!InWhiteList(req) && InBlackList(req)) || (conf.IsEnableLogin() && GetUsernameByToken(req.GetToken()) == "") {
+		return gweb.Error403() // 黑名单检查、登录检查
+	}
+
+	name := req.GetFormParameter("storeName")
+	if name == ".sysmnt" {
+		return gweb.Error500("不能删除 .sysmnt")
+	} else if conf.IsStoreNameAutoAddDate() {
+		if conf.GetSaveDays() > 0 {
+			ymd := cmn.Right(name, 8)
+			if cmn.Len(ymd) == 8 && cmn.Startwiths(ymd, "20") {
+				msg := fmt.Sprintf("当前是日志仓自动维护模式，最多保存 %d 天，不支持手动删除", conf.GetSaveDays())
+				return gweb.Error500(msg)
+			}
+		}
+	} else if name == "logdata" {
+		return gweb.Error500("日志仓 " + name + " 正在使用，不能删除")
+	}
+
+	if status.IsStorageOpening(name) {
+		return gweb.Error500("日志仓 " + name + " 正在使用，不能删除")
+	}
+
+	err := sysmnt.DeleteStorage(name)
+	if err != nil {
+		cmn.Error("日志仓", name, "删除失败", err)
+		return gweb.Error500("日志仓 " + name + " 正在使用，不能删除")
+	}
+
+	cacheTime = time.Now().Add(-1 * time.Hour) // 让检索时不用缓存名，避免查询不存在的日志仓
+
+	return gweb.Ok()
 }
 
 // 尝试查询最新版本号（注：服务不一定总是可用，每小时查取一次）

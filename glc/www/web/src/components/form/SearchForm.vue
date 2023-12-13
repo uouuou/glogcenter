@@ -1,12 +1,9 @@
 <template>
   <el-form ref="form" :inline="true" :model="formData" :rules="formRules" label-width="100">
     <el-row>
-      <!-- <el-form-item label="" class="c-search-form-item">
-        <el-input v-model="formData.searchKeys" input-style="width:500px" @keyup.enter="fnSearch" />
-      </el-form-item> -->
       <el-form-item class="c-search-form-item">
         <el-input v-model="formData.searchKeys" placeholder="请输入关键词检索，支持多关键词" input-style="width:500px;height: 30px"
-          @keyup.enter="fnSearch">
+          maxlength="1000" @keyup.enter="fnSearch">
           <template #append>
             <el-button type="primary" class="c-btn-search" style="height:30px;color: white; background-color:#0081dd"
               @click="fnSearch">
@@ -74,12 +71,15 @@ const formRules = ref(props.rules);
 const form = ref();
 const moreVisible = ref(false);
 
+$emitter.on("defaultStorageCondtion", v => defaultData.value.storage = v);
+
 const emit = defineEmits(['search']);
 
 const fnSearch = () => {
   moreVisible.value = false;
   emit('search', 1);
 }
+$emitter.on("fnSearch", fnSearch);
 
 const fnReset = () => {
 
@@ -105,7 +105,15 @@ const fnReset = () => {
 const noMoreSearchCondition = computed(() => {
   for (const [key, value] of Object.entries(formData.value)) {
     if (key == 'searchKeys') {
-      continue;
+      continue; // 忽略不提示小蓝点
+    }
+    if (key == 'storage') {
+      if (!defaultData.value.storage) {
+        continue; // 初始化时日志仓还没拿到，忽略不提示小蓝点
+      } else if (defaultData.value.storage == value) {
+        continue; // 和默认的日志仓条件一样，忽略不提示小蓝点
+      }
+      if (!value) return false; // 日志仓条件清空时，显示小蓝点
     }
     if (value) {
       if (Array.isArray(value)) {

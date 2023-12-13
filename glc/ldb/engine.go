@@ -48,33 +48,103 @@ func (e *Engine) AddLogDataModel(data *logdata.LogDataModel) {
 	e.logStorage.AddLogDataModel(data)
 }
 
-func (e *Engine) Search(searchKey string, system string, minDatetime string, maxDatetime string, loglevel string, loglevels []string,
-	currentDocId uint32, forward bool) *search.SearchResult {
+func (e *Engine) Search(cond *search.SearchCondition) *search.SearchResult {
 
 	// 分词后检索
 	var adds []string
-	adds = append(adds, system, loglevel)
-	kws := tokenizer.CutForSearchEx(searchKey, adds, nil) // 检索用关键词处理
+	adds = append(adds, cond.OrgSystem, cond.Loglevel, cond.User)
+	kws := tokenizer.CutForSearchEx(cond.SearchKey, adds, nil) // 检索用关键词处理
 
-	// 简单检查，存在无索引数据的关键词时，直接返回
+	// 【快速检查1】，存在无索引数据的关键词时，直接返回
+	idxw := indexword.NewWordIndexStorage(e.storeName)
+	totalCount := e.logStorage.TotalCount() // 当前日志仓总件数
+	maxMatchCount := totalCount             // 最大匹配件数
 	for _, word := range kws {
-		idxw := indexword.NewWordIndexStorage(e.storeName)
-		if idxw.GetTotalCount(word) < 1 {
+		cnt := idxw.GetTotalCount(word)
+		if cnt < 1 {
 			cmn.Debug("关键词", word, "没有索引数据，直接返回空结果")
 			rs := new(search.SearchResult)
-			rs.Total = cmn.Uint32ToString(e.logStorage.TotalCount())
-			rs.Count = cmn.Uint32ToString(0)
+			rs.Total = cmn.Uint32ToString(totalCount)
+			rs.Count = "0"
 			return rs
+		}
+		if cnt < maxMatchCount {
+			maxMatchCount = cnt // 取最小件数，尽量减少最大匹配件数的误差
 		}
 	}
 
-	if len(kws) == 0 {
-		// 无条件浏览模式（可能含多选条件）
-		return search.SearchLogData(e.storeName, loglevels, currentDocId, forward, minDatetime, maxDatetime)
+	// 【快速检查2】，日志级别多选时，合计下件数，没有数据时直接返回
+	if len(cond.Loglevels) > 0 {
+		var allcnt uint32
+		for _, word := range cond.Loglevels {
+			n := idxw.GetTotalCount("!" + word)
+			allcnt += n // 累加总数
+		}
+		if allcnt < 1 {
+			cmn.Debug("日志级别范围 ", cmn.Join(cond.Loglevels, ","), " 在日志仓 ", e.storeName, " 中没有索引数据，直接返回空结果")
+			rs := new(search.SearchResult)
+			rs.Total = cmn.Uint32ToString(totalCount)
+			rs.Count = "0"
+			return rs
+		}
+
+		if allcnt < maxMatchCount {
+			maxMatchCount = allcnt // 取其小，尽量减少最大匹配件数的误差
+		}
 	}
 
-	// 多关键词查询模式
-	return search.SearchWordIndex(e.storeName, kws, loglevels, currentDocId, forward, minDatetime, maxDatetime)
+	// 【快速检查3】，权限内的系统没有数据时，直接返回（场景：虽然没有输入系统条件，但当前日志仓没有权限范围系统的数据）
+	if cond.OrgSystem == "" && cond.OrgSystems[0] != "*" {
+		var sysnames []string
+		var allcnt uint32
+		for _, word := range cond.OrgSystems {
+			n := idxw.GetTotalCount(word)
+			if n > 0 {
+				sysnames = append(sysnames, word) // 这个系统有数据
+			}
+			allcnt += n // 累加总数
+		}
+		if allcnt < 1 {
+			cmn.Debug("权限范围系统 ", cmn.Join(cond.OrgSystems, ","), " 在日志仓 ", e.storeName, " 中没有索引数据，直接返回空结果")
+			rs := new(search.SearchResult)
+			rs.Total = cmn.Uint32ToString(totalCount)
+			rs.Count = "0"
+			return rs
+		}
+
+		if allcnt < maxMatchCount {
+			maxMatchCount = allcnt // 取其小，尽量减少最大匹配件数的误差
+		}
+
+		// 重置调整优化系统条件
+		cond.System = cond.OrgSystem
+		cond.Systems = cond.OrgSystems
+
+		if len(sysnames) == 1 {
+			cond.System = sysnames[0] // 权限范围内仅这个系统是有数据的，直接调整作为系统条件提高查询性能
+		} else {
+			cond.Systems = sysnames // 过滤掉没有数据的系统，提高查询性能
+		}
+	} else {
+		// 重置系统条件
+		cond.System = cond.OrgSystem
+		cond.Systems = cond.OrgSystems
+	}
+
+	cond.Kws = kws
+	var rs *search.SearchResult
+	if len(cond.Kws) == 0 {
+		// 无条件浏览模式（可能含多选条件）
+		rs = search.SearchLogData(e.storeName, cond)
+	} else {
+		// 多关键词查询模式
+		rs = search.SearchWordIndex(e.storeName, cond)
+	}
+
+	if maxMatchCount < cmn.StringToUint32(rs.Count, 0) {
+		rs.Count = cmn.Uint32ToString(maxMatchCount) // 取其小，尽量减少最大匹配件数的误差
+	}
+	return rs
 }
 
 // AddTextLog 添加日志
