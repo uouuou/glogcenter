@@ -15,20 +15,21 @@ import (
 
 	"github.com/gotoeasy/glang/cmn"
 )
+
 const LogTransferAdd = "/v1/log/transferAdd"
 const SysUserTransferSave = "/v1/sysuser/transferSave"
 const SysUserTransferChgPsw = "/v1/sysuser/transferChgPsw"
 const SysUserTransferDel = "/v1/sysuser/transferDel"
 const UserTransferLogin = "/v1/user/transferLogin"
 
-var storeRoot string
+var storeRoot string = "/glogcenter" // 【固定】容器化缘故，不适合修改
+var serverPort string = "8080"       // 【固定】容器化缘故，不适合修改
+var contextPath string = "/glc"      // 【固定】容器化缘故，不适合修改
 var storeChanLength int
 var maxIdleTime int
 var storeNameAutoAddDate bool
 var serverUrl string
 var serverIp string
-var serverPort string = "8080"
-var contextPath string = "/glc" // web服务contextPath，固定【/glc】
 var enableSecurityKey bool
 var securityKey string
 var headerSecurityKey string
@@ -41,7 +42,6 @@ var saveDays int
 var enableLogin bool
 var username string
 var password string
-var userList []User
 var sessionTimeout int
 var clusterMode bool
 var clusterUrls []string
@@ -60,11 +60,6 @@ var testMode bool
 var tokenSalt string
 var aryWhite []string
 var aryBlack []string
-
-type User struct {
-	Username string `json:"username" yaml:"username"`
-	Password string `json:"password" yaml:"password"`
-}
 
 type Config struct {
 	StoreRoot            string   `json:"storeRoot" yaml:"storeRoot"`                       //  存储根目录
@@ -86,7 +81,6 @@ type Config struct {
 	AmqpJsonFormat       bool     `json:"amqpJsonFormat" yaml:"amqpJsonFormat"`             // rabbitMq消息文本是否为json格式，默认true
 	SaveDays             int      `json:"saveDays" yaml:"saveDays"`                         // 日志分仓时的保留天数(0~180)，0表示不自动删除，默认180天
 	EnableLogin          bool     `json:"enableLogin" yaml:"enableLogin"`                   // 是否开启用户密码登录，默认“false”
-	User                 []User   `json:"user" yaml:"user"`                                 // 登录用户名密码，默认“admin，admin@@2023”
 	ClusterMode          bool     `json:"clusterMode" yaml:"clusterMode"`                   // 是否开启集群模式，默认false
 	ClusterUrls          []string `json:"clusterUrls" yaml:"clusterUrls"`                   // 从服务器地址，多个时逗号分开，默认“”
 	EnableBackup         bool     `json:"enableBackup" yaml:"enableBackup"`                 // 是否开启备份，默认false
@@ -102,9 +96,12 @@ type Config struct {
 	IsTestMode           bool     `json:"testMode" yaml:"testMode"`                         // 是否测试模式，默认false
 	MulitLineSearch      bool     `json:"mulitLineSearch" yaml:"mulitLineSearch"`           // 是否开启多行搜索，默认false
 	LogLevel             string   `json:"logLevel" yaml:"logLevel"`
-	EnableCors           bool     `json:"enableCors" yaml:"enableCors"`
-	PageSize             int      `json:"pageSize" yaml:"pageSize"`
-	SessionTimeout int `json:"session_timeout" yaml:"sessionTimeout"`
+	EnableCors           bool     `json:"enableCors" yaml:"enableCors"`          // 是否允许跨域，默认false
+	PageSize             int      `json:"pageSize" yaml:"pageSize"`              // 每次检索件数，默认100（有效范围1~1000）
+	SessionTimeout       int      `json:"session_timeout" yaml:"sessionTimeout"` // 登录会话超时时间，单位分钟
+	TestMod              bool     `json:"testMod" yaml:"testMod"`                // 是否测试模式
+	Username             string   `json:"username" yaml:"username"`              // 登录用户名
+	Password             string   `json:"password" yaml:"password"`              // 登录密码
 }
 
 func init() {
@@ -119,7 +116,13 @@ func init() {
 	if yamlerr != nil {
 		cmn.Error("读取配置文件失败", err)
 	}
-
+	if setting.Username == "" {
+		setting.Username = "admin"
+		isNew = true
+	}
+	if setting.Password == "" {
+		setting.Password = "Admin@@2023"
+	}
 	if setting.StoreRoot == "" {
 		setting.StoreRoot = "/glogcenter"
 		isNew = true
@@ -168,17 +171,6 @@ func init() {
 		setting.TokenSalt = "glogcenter"
 		isNew = true
 	}
-	if setting.User == nil {
-		setting.User = []User{
-			{
-				Username: "admin",
-				Password: "admin@@2023",
-			},
-		}
-		username = "admin"
-		password = "admin@@2023"
-		isNew = true
-	}
 	if setting.GlcGroup == "" {
 		setting.GlcGroup = "default"
 		isNew = true
@@ -191,7 +183,7 @@ func init() {
 		setting.PageSize = 100
 		isNew = true
 	}
-	if setting.SessionTimeout==0{
+	if setting.SessionTimeout == 0 {
 		setting.SessionTimeout = 30
 	}
 	setting.PageSize = getPageSizeConf(setting.PageSize)
@@ -237,11 +229,6 @@ func init() {
 	minioBucket = setting.MinioBucket
 	enableUploadMinio = setting.EnableUploadMinio
 	goMaxProcess = setting.GoMaxProcess
-	userList = setting.User
-	for _, user := range userList {
-		username = user.Username
-		password = user.Password
-	}
 	pageSize = setting.PageSize
 	enableCors = setting.EnableCors
 	tokenSalt = setting.TokenSalt
@@ -250,6 +237,8 @@ func init() {
 	aryWhite = setting.AryWhite
 	aryBlack = setting.AryBlack
 	sessionTimeout = setting.SessionTimeout
+	username = setting.Username
+	password = setting.Password
 }
 
 // 取配置： 登录会话超时时间，可通过环境变量“GLC_SESSION_TIMEOUT”设定，默认“30”分钟
@@ -480,9 +469,4 @@ func GetMaxIdleTime() int {
 // 取配置：存储名是否自动添加日期（日志量大通常按日单位区分存储），可通过环境变量“GLC_STORE_NAME_AUTO_ADD_DATE”设定，默认值“true”
 func IsStoreNameAutoAddDate() bool {
 	return storeNameAutoAddDate
-}
-
-// GetUserList 用户列表
-func GetUserList() []User {
-	return userList
 }

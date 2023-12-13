@@ -17,11 +17,6 @@ amqpQueueName: glc-log-queue
 amqpJsonFormat: true
 saveDays: 180
 enableLogin: true
-user:
-- username: admin
-  password: admin@@2023
-- username: test
-  password: admin@@2023
 clusterMode: false
 clusterUrls: []
 enableBackup: false
@@ -32,6 +27,14 @@ minioPassword: ""
 minioBucket: ""
 enableUploadMinio: false
 goMaxProcess: 16
+aryWhite: []
+aryBlack: []
+testMode: false
+mulitLineSearch: false
 logLevel: INFO
 enableCors: false
 pageSize: 100
+sessionTimeout: 30
+testMod: false
+username: admin
+password: Admin@@2023
