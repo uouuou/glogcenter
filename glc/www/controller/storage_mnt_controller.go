@@ -14,6 +14,7 @@ import (
 )
 
 var glcLatest string = ""
+var glcOrigin string = ""
 
 // 查询是否测试模式
 func TestModeController(req *gweb.HttpRequest) *gweb.HttpResult {
@@ -24,6 +25,13 @@ func TestModeController(req *gweb.HttpRequest) *gweb.HttpResult {
 func VersionController(req *gweb.HttpRequest) *gweb.HttpResult {
 	rs := cmn.OfMap("version", ver.VERSION, "latest", glcLatest) // version当前版本号，latest最新版本号
 	return gweb.Result(rs)
+}
+
+func SetOrigin(req *gweb.HttpRequest) {
+	origin := req.GinCtx.GetHeader("Origin")
+	if origin != "" {
+		glcOrigin = origin
+	}
 }
 
 // 查询日志仓名称列表
@@ -126,11 +134,12 @@ func StorageDeleteController(req *gweb.HttpRequest) *gweb.HttpResult {
 // 尝试查询最新版本号（注：服务不一定总是可用，每小时查取一次）
 func init() {
 	go func() {
-		url := "https://glc.gotoeasy.top/glogcenter/current/version.json?v=" + ver.VERSION
+		url := "https://glc.gotoeasy.top/glogcenter/current/version.json?v=" + ver.VERSION + "&h=" + cmn.Base62Encode(cmn.StringToBytes(glcOrigin))
 		v := cmn.GetGlcLatestVersion(url)
 		glcLatest = cmn.IifStr(v != "", v, glcLatest)
 		ticker := time.NewTicker(time.Hour)
 		for range ticker.C {
+			url = "https://glc.gotoeasy.top/glogcenter/current/version.json?v=" + ver.VERSION + "&h=" + cmn.Base62Encode(cmn.StringToBytes(glcOrigin))
 			v = cmn.GetGlcLatestVersion(url)
 			glcLatest = cmn.IifStr(v != "", v, glcLatest)
 		}
