@@ -32,3 +32,5 @@
 /glc-python-client/build/
 /glc-python-client/dist/
 /glc-python-client/glogcenter.egg-info/
+/glc/config
+vendor

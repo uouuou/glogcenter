@@ -13,7 +13,7 @@ import (
 	"github.com/gotoeasy/glang/cmn"
 )
 
-var glcLatest string = ""
+var glcLatest string = ver.VERSION
 var glcOrigin string = ""
 
 // 查询是否开启智能助手
@@ -134,19 +134,4 @@ func StorageDeleteController(req *gweb.HttpRequest) *gweb.HttpResult {
 	cacheTime = time.Now().Add(-1 * time.Hour) // 让检索时不用缓存名，避免查询不存在的日志仓
 
 	return gweb.Ok()
-}
-
-// 尝试查询最新版本号（注：服务不一定总是可用，每小时查取一次）
-func init() {
-	go func() {
-		url := "https://glc.gotoeasy.top/glogcenter/current/version.json?v=" + ver.VERSION + "&h=" + cmn.Base62Encode(cmn.StringToBytes(glcOrigin))
-		v := cmn.GetGlcLatestVersion(url)
-		glcLatest = cmn.IifStr(v != "", v, glcLatest)
-		ticker := time.NewTicker(time.Hour)
-		for range ticker.C {
-			url = "https://glc.gotoeasy.top/glogcenter/current/version.json?v=" + ver.VERSION + "&h=" + cmn.Base62Encode(cmn.StringToBytes(glcOrigin))
-			v = cmn.GetGlcLatestVersion(url)
-			glcLatest = cmn.IifStr(v != "", v, glcLatest)
-		}
-	}()
 }

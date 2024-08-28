@@ -22,9 +22,9 @@ const SysUserTransferChgPsw = "/v1/sysuser/transferChgPsw"
 const SysUserTransferDel = "/v1/sysuser/transferDel"
 const UserTransferLogin = "/v1/user/transferLogin"
 
-var storeRoot string = "/glogcenter" // 【固定】容器化缘故，不适合修改
-var serverPort string = "8080"       // 【固定】容器化缘故，不适合修改
-var contextPath string = "/glc"      // 【固定】容器化缘故，不适合修改
+var storeRoot = "/glogcenter" // 【固定】容器化缘故，不适合修改
+var serverPort = "8080"       // 【固定】容器化缘故，不适合修改
+var contextPath = "/glc"      // 【固定】容器化缘故，不适合修改
 var storeChanLength int
 var maxIdleTime int
 var storeNameAutoAddDate bool
@@ -53,13 +53,17 @@ var minioPassword string
 var minioBucket string
 var enableUploadMinio bool
 var goMaxProcess int
+var goMaxProcessIdx int
 var enableCors bool
 var pageSize int
+var nearSearchSize int
 var mulitLineSearch bool
 var testMode bool
 var tokenSalt string
 var aryWhite []string
 var aryBlack []string
+var ipAddCity bool
+var enableChatAi bool
 
 type Config struct {
 	StoreRoot            string   `json:"storeRoot" yaml:"storeRoot"`                       //  存储根目录
@@ -96,15 +100,17 @@ type Config struct {
 	IsTestMode           bool     `json:"testMode" yaml:"testMode"`                         // 是否测试模式，默认false
 	MulitLineSearch      bool     `json:"mulitLineSearch" yaml:"mulitLineSearch"`           // 是否开启多行搜索，默认false
 	LogLevel             string   `json:"logLevel" yaml:"logLevel"`
-	EnableCors           bool     `json:"enableCors" yaml:"enableCors"`          // 是否允许跨域，默认false
-	PageSize             int      `json:"pageSize" yaml:"pageSize"`              // 每次检索件数，默认100（有效范围1~1000）
-	SessionTimeout       int      `json:"session_timeout" yaml:"sessionTimeout"` // 登录会话超时时间，单位分钟
-	TestMod              bool     `json:"testMod" yaml:"testMod"`                // 是否测试模式
-	Username             string   `json:"username" yaml:"username"`              // 登录用户名
-	Password             string   `json:"password" yaml:"password"`              // 登录密码
+	EnableCors           bool     `json:"enableCors" yaml:"enableCors"`           // 是否允许跨域，默认false
+	PageSize             int      `json:"pageSize" yaml:"pageSize"`               // 每次检索件数，默认100（有效范围1~1000）
+	SessionTimeout       int      `json:"session_timeout" yaml:"sessionTimeout"`  // 登录会话超时时间，单位分钟
+	TestMod              bool     `json:"testMod" yaml:"testMod"`                 // 是否测试模式
+	Username             string   `json:"username" yaml:"username"`               // 登录用户名
+	Password             string   `json:"password" yaml:"password"`               // 登录密码
+	IpAddCity            bool     `json:"ipAddCity" yaml:"ipAddCity"`             // 是否开启IP地址转城市，默认false
+	GoMaxProcessIdx      int      `json:"goMaxProcessIdx" yaml:"goMaxProcessIdx"` // 创建索引使用的最大协程数量，默认是最大CPU数量（设定值不在实际数量范围是按最大看待）
+	NearSearchSize       int      `json:"nearSearchSize" yaml:"nearSearchSize"`   // 定位相邻检索的查询件数，默认200（有效范围50~1000）
+	EnableChatAi         bool     `json:"enableChatAi" yaml:"enableChatAi"`       // 是否开启聊天机器人
 }
-var ipAddCity bool
-var enableChatAi bool
 
 func init() {
 	var isNew bool
@@ -188,6 +194,13 @@ func init() {
 	if setting.SessionTimeout == 0 {
 		setting.SessionTimeout = 30
 	}
+	if setting.NearSearchSize == 0 {
+		setting.NearSearchSize = 200
+	}
+	if setting.GoMaxProcessIdx == 0 {
+		setting.GoMaxProcessIdx = getGoMaxProcessConf(-1)
+		isNew = true
+	}
 	setting.PageSize = getPageSizeConf(setting.PageSize)
 	if setting.LogLevel == "" {
 		setting.LogLevel = "INFO"
@@ -241,6 +254,25 @@ func init() {
 	sessionTimeout = setting.SessionTimeout
 	username = setting.Username
 	password = setting.Password
+	ipAddCity = setting.IpAddCity
+	enableChatAi = setting.EnableChatAi
+	nearSearchSize = setting.NearSearchSize
+	goMaxProcessIdx = setting.GoMaxProcessIdx
+}
+
+// 取配置： 是否开启GLC智能助手
+func IsEnableChatAi() bool {
+	return enableChatAi
+}
+
+// 取配置： 定位相邻检索的查询件数，可通过环境变量“GLC_NEAR_SEARCH_SIZE”设定，默认200件
+func GetNearSearchSize() int {
+	return nearSearchSize
+}
+
+// 取配置： IP是否要自动附加城市信息，默认false
+func IsIpAddCity() bool {
+	return ipAddCity
 }
 
 // 取配置： 登录会话超时时间，可通过环境变量“GLC_SESSION_TIMEOUT”设定，默认“30”分钟
@@ -311,9 +343,9 @@ func GetGoMaxProcess() int {
 	return goMaxProcess
 }
 func getGoMaxProcessConf(n int) int {
-	max := runtime.NumCPU()
-	if n < 1 || n > max {
-		n = max
+	numCPU := runtime.NumCPU()
+	if n < 1 || n > numCPU {
+		n = numCPU
 	}
 	return n
 }

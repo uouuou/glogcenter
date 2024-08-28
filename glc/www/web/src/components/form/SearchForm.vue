@@ -3,6 +3,7 @@
     <el-row>
       <el-form-item class="c-search-form-item">
         <el-input v-model="formData.searchKeys" placeholder="请输入关键词检索，支持多关键词" input-style="width:500px;height: 30px"
+                  style="width: 500px;"
           maxlength="1000" @keyup.enter="fnSearch">
           <template #append>
             <el-button type="primary" class="c-btn-search" style="height:30px;color:white"
