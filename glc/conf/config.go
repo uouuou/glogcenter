@@ -103,6 +103,8 @@ type Config struct {
 	Username             string   `json:"username" yaml:"username"`              // 登录用户名
 	Password             string   `json:"password" yaml:"password"`              // 登录密码
 }
+var ipAddCity bool
+var enableChatAi bool
 
 func init() {
 	var isNew bool
@@ -275,6 +277,15 @@ func IsMulitLineSearch() bool {
 func GetPageSize() int {
 	return pageSize
 }
+func getNearSearchSizeConf(n int) int {
+	if n < 50 {
+		n = 50
+	}
+	if n > 1000 {
+		n = 1000
+	}
+	return n
+}
 func getPageSizeConf(n int) int {
 	if n < 1 {
 		n = 1
@@ -288,6 +299,11 @@ func getPageSizeConf(n int) int {
 // 取配置： 是否允许跨域，可通过环境变量“GLC_ENABLE_CROSS”设定，默认false
 func IsEnableCors() bool {
 	return enableCors
+}
+
+// 取配置： 创建索引使用的最大协程数量，默认是最大CPU数量（设定值不在实际数量范围是按最大看待）
+func GetGoMaxProcessIdx() int {
+	return goMaxProcessIdx
 }
 
 // 取配置： 使用的最大CPU数量，可通过环境变量“GLC_GOMAXPROCS”设定，默认最大CPU数量

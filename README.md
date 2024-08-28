@@ -31,23 +31,23 @@
 <br>
 
 ## 特点
-- [x] 使用`golang`实现，具备`go`的各种特性优势，特别是性能高、节省资源
-- [x] 基于`LSMT`实现文件存储，结合日志写多读少特点稍加设计，真是快
-- [x] 日志吞食量每秒近万条，闲时建索引速度每秒数千条，能满足大多项目需要
-- [x] 支持多关键词全文检索，支持中文分词，毫秒级查询响应，无感般的流畅
-- [x] 内置提供`VUE`实现的日志查询管理界面，页面简洁大方，操作习惯自然
-- [x] 支持个性化环境变量开关控制，支持日志仓自动化维护，灵活省心
-- [x] 提供`docker`镜像，支持容器化部署，方便之极
-- [x] 提供`java`项目日志收集包，`java`项目闭环支持
-- [x] 提供`golang`项目日志收集包，`golang`项目闭环支持
-- [x] 支持从`RabbitMQ`收取日志信息，满足更多闭环需求
-- [x] 支持登录验证，支持秘钥校验，支持跨域设定，灵活的服务安全性保障
-- [x] 支持多服务集群模式部署，提供服务高可用性保障、数据冗余性保障
-- [x] 系统间的耦合性极低，可以非常方便的接入各系统，上至央企大项目下至本地开发调试，已历经众多案例磨炼，表现稳定出色，达`生产级应用`要求
+- [x] 使用golang实现，具备go的各种特性优势，特别`【节省资源】`
+- [x] 基于LSMT存储，融合日志写多读少的特点进行实现，毫秒级查询响应 `【性能卓越】`
+- [x] 日志吞食量每秒近万条，闲时建索引每秒数千条，满足大多项目场景 `【广泛适用】`
+- [x] 支持多关键词全文检索，支持多维度线索查询，支持定位相邻查询 `【功能丰富】`
+- [x] 内置提供VUE实现的查询管理界面，页面简洁大方，操作习惯自然 `【体验优秀】`
+- [x] 提供docker镜像，支持容器化部署，支持个性化环境变量配置 `【部署方便】`
+- [x] 提供java/go/python等客户端工具包，日志收集信手拈来 `【集成简单】`
+- [x] 支持登录验证，秘钥校验，权限控制，黑白名单等安全设定 `【安全可靠】`
+- [x] 支持多服务集群模式部署，提供服务稳定性保障、数据冗余性保障 `【高可用保障】`
+- [x] 上至央企大项目下至本地调试，已历经众多案例磨炼，表现出色 `【生产级别品质】`
 
 
 <div align=center>
 <img src="https://gotoeasy.github.io/screenshots/glogcenter/glogcenter.png"/>
+<img src="https://gotoeasy.github.io/screenshots/glogcenter/storage.png"/>
+<img src="https://gotoeasy.github.io/screenshots/glogcenter/users.png"/>
+<img src="https://gotoeasy.github.io/screenshots/glogcenter/chatai.png"/>
 </div>
 
 <br>
@@ -55,6 +55,7 @@
 ## `docker`单机部署模式简易示例
 ```shell
 # 快速体验（其中通过GLC_TEST_MODE=true开启测试模式，页面上会显示生成测试数据的按钮，方便测试或快速体验）
+# 镜像拉取有困难？呃...问下智能助手
 docker run -d -p 8080:8080 -e GLC_TEST_MODE=true gotoeasy/glc
 
 # 外挂数据目录
@@ -91,7 +92,7 @@ docker run -d -p 8080:8080 -e GLC_CLUSTER_MODE=true -e GLC_SERVER_URL=http://172
 - [x] `GLC_SAVE_DAYS`日志仓按日存储自动维护时的保留天数(有效范围`0~1200`)，`0`表示不自动删除，默认`180`天
 - [x] `GLC_SEARCH_MULIT_LINE`，是否对日志列的全部行进行索引检索，默认`false`仅第一行
 - [x] `GLC_ENABLE_LOGIN`是否开启用户密码登录功能，默认`false`
-- [x] `GLC_USERNAME`管理员用户名，默认`glc`，从`0.13.0`版本开始，管理员新增用户及权限管理功能
+- [x] `GLC_USERNAME`管理员用户名，默认`glc`，从`0.13.0`版本开始，管理员有新增用户及权限管理功能，并且有全部系统的查询权限
 - [x] `GLC_PASSWORD`管理员密码，默认`GLogCenter100%666`
 - [x] `GLC_TOKEN_SALT`用以生成令牌的字符串令牌盐，开启登录功能时建议设定提高安全性，默认空白
 - [x] `GLC_ENABLE_SECURITY_KEY`日志添加的接口是否开启API秘钥校验，默认`false`
@@ -111,6 +112,8 @@ docker run -d -p 8080:8080 -e GLC_CLUSTER_MODE=true -e GLC_SERVER_URL=http://172
 - [x] `GLC_WHITE_LIST`白名单，多个用逗号分隔，黑白名单冲突时白名单优先，默认空白。可设定IP，最后段支持通配符，如`1.2.3.*`，内网IP默认都是白名单不必设定，实验性质的支持区域名称（因为IP地域查询可能有误差），如`上海市,深圳市`
 - [x] `GLC_BLACK_LIST`黑名单，多个用逗号分隔，黑白名单冲突时白名单优先，默认空白。可设定IP，最后段支持通配符，如`1.2.3.*`，也支持单个通配符`*`代表全部（也就是只允许内网或白名单指定使用），实验性质的支持区域名称（因为IP地域查询可能有误差）
 - [x] `GLC_IP_ADD_CITY`对IP字段是否自动附加城市信息，默认`false`
+- [x] `GLC_NEAR_SEARCH_SIZE`定位相邻检索时的检索件数，默认200，有效范围50-1000
+- [x] `GLC_ENABLE_CHATAI`是否开启GLC智能助手，默认true，会在菜单栏显示
 
 
 ## 接口
@@ -139,7 +142,7 @@ curl -X POST -d '{"system":"demo", "date":"2023-01-01 01:02:03.456","text":"demo
 <dependency>
     <groupId>top.gotoeasy</groupId>
     <artifactId>glc-logback-appender</artifactId>
-    <version>0.14.1</version>
+    <version>0.16.0</version>
 </dependency>
 ```
 
@@ -199,11 +202,14 @@ curl -X POST -d '{"system":"demo", "date":"2023-01-01 01:02:03.456","text":"demo
 ## 使用`golang`语言的项目，提供工具包，开箱即用
 ```shell
 # 方式1）通过环境变量自动配置，程序直接使用cmn.Debug(...)写日志即可
-export GLC_ENABLE=true # 此配置默认false，要生效必须配置为true
-export GLC_API_URL='http://127.0.0.1:8080/glc/v1/log/add'
-export GLC_API_KEY='X-GLC-AUTH:glogcenter'
-export GLC_SYSTEM=demo
+export GLC_ENABLE=true # 此配置默认false，要发送日志中心必须配置为true
+export GLC_ENABLE_CONSOLE_LOG=true # 默认true，控制台不打印时配置为false
+export GLC_API_URL='http://127.0.0.1:8080/glc/v1/log/add' # 未配置时将取消发送
+export GLC_API_KEY='X-GLC-AUTH:glogcenter' # 这是默认值，按需修改
+export GLC_SYSTEM=default  # 默认default，按需修改
 export GLC_LOG_LEVEL=debug # 日志级别（debug/info/warn/error）
+export GLC_TRACE_ID=12345  # 默认空，跨进程调用等一些特殊场景使用
+export GLC_PRINT_SRC_LINE=true # 是否打印源码行号，go语言专用，默认false
 ```
 
 ```golang
@@ -227,6 +233,34 @@ func main() {
 ```
 
 
+## 使用`python`语言的项目，提供工具包，开箱即用
+```shell
+# 支持以下环境变量配置
+export GLC_ENABLE=true # 默认false，要发送日志中心必须配置为true
+export GLC_ENABLE_CONSOLE_LOG=true # 默认true，控制台不打印时配置为false
+export GLC_API_URL='http://127.0.0.1:8080/glc/v1/log/add' # 未配置时将取消发送
+export GLC_API_KEY='X-GLC-AUTH:glogcenter' # 这是默认值，按需修改
+export GLC_SYSTEM=default  # 默认default，按需修改
+export GLC_LOG_LEVEL=debug # 日志级别（debug/info/warn/error），默认debug
+export GLC_TRACE_ID=12345  # 默认空，跨进程调用等一些特殊场景使用
+```
+
+```python
+# 安装
+pip install glogcenter
+
+# 使用
+from glogcenter import glc
+
+glc.debug("这是Debug级别日志")
+glc.info("这是Info级别日志", "多个参数", "会被拼接")
+gd = glc.GlcData()
+gd.user = 'abcd'
+glc.warn("这里的GlcData类型参数都不会打印", "gd只起传值作用", gd)
+glc.error("gd参数顺序无关", gd, "用法如同log库，但对GlcData做了特殊的判断处理")
+```
+
+
 ## 更新履历
 
 ### 开发版`latest`
@@ -234,6 +268,37 @@ func main() {
 - [ ] 日志审计、告警
 - [ ] 集群支持动态删减节点（或是页面管理删除）
 
+
+### 版本`0.16.0`
+
+- [x] 分词优化
+- [x] 大幅提升建索引速度（强烈推荐使用固态硬盘）
+
+
+<details>
+<summary><strong><mark>更多历史版本更新履历</mark></strong></summary> 
+
+### 版本`0.15.2`
+
+- [x] 支持#44： 方便ngnix目录方式代理
+- [x] 部分瑕疵修复
+
+### 版本`0.15.1`
+
+- [x] 新增`GLC智能助手`，可以随时解答日志中心的相关问题
+- [x] 修复#38：系统名大小写可能引起筛选不起作用
+
+
+### 版本`0.15.0`
+
+- [x] 新增`定位相邻检索`功能，非常适合快速定位进行上下文查询的场景。相应增加`GLC_NEAR_SEARCH_SIZE`参数，配置定位相邻检索时的检索件数，默认200，有效范围50-1000
+- [x] 新增Python客户端工具包，方便Python语言的项目接入日志中心
+- [x] 修复一些已知问题
+
+
+### 版本`0.14.2`
+
+- [x] 修复#32 隐蔽的权限控制错误问题
 
 ### 版本`0.14.1`
 
@@ -245,10 +310,6 @@ func main() {
 - [x] 日志新增用户字段，界面新增用户的精确检索条件，当要做特定用户维度的日志审计时，这会显得非常实用
 - [x] 包`glc-logback-appender`同步升级，新增MDC存取用户的接口
 - [x] 修复已知问题
-
-
-<details>
-<summary><strong><mark>更多历史版本更新履历</mark></strong></summary> 
 
 ### 版本`0.13.0`
 

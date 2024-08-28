@@ -45,9 +45,12 @@ func LogSearchController(req *gweb.HttpRequest) *gweb.HttpResult {
 	cond.CurrentStoreName = req.GetFormParameter("currentStoreName")          // 滚动查询时定位用日志仓
 	cond.CurrentId = cmn.StringToUint32(req.GetFormParameter("currentId"), 0) // 滚动查询时定位用ID
 	cond.Forward = cmn.StringToBool(req.GetFormParameter("forward"), true)    // 是否向下滚动查询
+	cond.OldNearId = cmn.StringToUint32(req.GetFormParameter("oldNearId"), 0) // 相邻检索旧ID
+	cond.NewNearId = cmn.StringToUint32(req.GetFormParameter("newNearId"), 0) // 相邻检索新ID
+	cond.NearStoreName = req.GetFormParameter("nearStoreName")                // 相邻检索时新ID对应的日志仓
 	cond.DatetimeFrom = req.GetFormParameter("datetimeFrom")                  // 日期范围（From）
 	cond.DatetimeTo = req.GetFormParameter("datetimeTo")                      // 日期范围（To）
-	cond.OrgSystem = cmn.Trim(req.GetFormParameter("system"))                 // 系统
+	cond.OrgSystem = cmn.ToLower(cmn.Trim(req.GetFormParameter("system")))    // 系统
 	cond.User = cmn.ToLower(cmn.Trim(req.GetFormParameter("user")))           // 用户
 	cond.Loglevel = cmn.ToLower(req.GetFormParameter("loglevel"))             // 单选条件
 	cond.Loglevels = cmn.Split(cond.Loglevel, ",")                            // 多选条件
@@ -78,7 +81,7 @@ func LogSearchController(req *gweb.HttpRequest) *gweb.HttpResult {
 			// 一般用户，按设定权限
 			user := mnt.GetSysUser(username)
 			if user == nil {
-				return gweb.Error500("") // 不应该出现，保险起见防意外
+				return gweb.Error403() // 可能出现，用户登录使用期间被管理员删除账号
 			}
 			if user.Systems == "*" {
 				cond.OrgSystems = append(cond.OrgSystems, "*") // 全部系统都有访问权限
@@ -151,6 +154,10 @@ func LogSearchController(req *gweb.HttpRequest) *gweb.HttpResult {
 	result.Total = cmn.Uint32ToString(total)                                      // 总件数
 	result.Count = cmn.Uint32ToString(count)                                      // 最大匹配检索（笼统，在最大查取件数（5000件）内查完时，前端会改成精确的和结果一样的件数）
 	result.TimeMessage = "耗时" + getTimeInfo(time.Since(startTime).Milliseconds()) // 查询耗时
+	if cond.NewNearId > 0 && len(result.Data) == 0 {
+		// 相邻检索时确保能返回定位日志
+		result.Data = append(result.Data, search.GetLogDataModelById(cond.NearStoreName, cond.NewNearId))
+	}
 	return gweb.Result(result)
 }
 

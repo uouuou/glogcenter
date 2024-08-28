@@ -59,13 +59,29 @@ export const getUserMenu = async () => {
     component: '/glc/storages/StoragesMain',
     openInner: true,
   });
-  menus.push({
-    path: '/glc/sysuser',
-    title: '用户管理',
-    icon: 'users',
-    component: '/glc/sysuser/SysuserMain',
-    openInner: true,
-    role: 'admin',
-  });
+
+  let rs = await $post('/v1/user/enableLogin', {}, null, { 'Content-Type': 'application/x-www-form-urlencoded' });
+  if (rs.success && rs.result) {
+    menus.push({
+      path: '/glc/sysuser',
+      title: '用户管理',
+      icon: 'users',
+      component: '/glc/sysuser/SysuserMain',
+      openInner: true,
+      role: 'admin',
+    });
+  }
+
+  rs = await $post('/v1/sys/chatai', {}, null, { 'Content-Type': 'application/x-www-form-urlencoded' });
+  if (rs.success && rs.result) {
+    menus.push({
+      path: '/glc/chatai',
+      title: 'GLC智能助手',
+      icon: 'ai',
+      component: 'https://ai.youdao.com/saas/qanything/#/bots/C9BA280AA796491F/share',
+      openInner: true,
+    });
+  }
+
   return (menuState.aryMenu = menus);
 };
