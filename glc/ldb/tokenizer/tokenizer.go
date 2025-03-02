@@ -5,19 +5,15 @@
 package tokenizer
 
 import (
-	"path/filepath"
-	"runtime"
-
 	"github.com/gotoeasy/glang/cmn"
 )
 
+// 分词器
 var sego *cmn.TokenizerSego
 
-// 初始化装载字典
+// 初始化分词器
 func init() {
-	_, filename, _, _ := runtime.Caller(0) // 当前go文件所在路径
-	dictfile := filepath.Join(filepath.Dir(filename), "dict.txt")
-	sego = cmn.NewTokenizerSego(dictfile)
+	sego = cmn.NewTokenizerSego()
 }
 
 // CutForSearch 按搜索引擎模式进行分词后返回分词数组

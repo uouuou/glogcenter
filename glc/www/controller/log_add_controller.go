@@ -5,11 +5,47 @@ import (
 	"glc/gweb"
 	"glc/ldb"
 	"glc/ldb/storage/logdata"
+	"sort"
+	"sync"
+	"time"
 
 	"github.com/gotoeasy/glang/cmn"
 )
 
-// JsonLogAddController 添加日志（JSON提交方式）
+
+var mapSystem = make(map[string]int64)
+var muSystem sync.Mutex
+
+// JsonLogAddBatchController 添加日志（JSON提交方式）
+func JsonLogAddBatchController(req *gweb.HttpRequest) *gweb.HttpResult {
+
+	// 开启API秘钥校验时才检查
+	if conf.IsEnableSecurityKey() && req.GetHeader(conf.GetHeaderSecurityKey()) != conf.GetSecurityKey() {
+		return gweb.Error(403, "未经授权的访问，拒绝服务")
+	}
+
+	var mds []logdata.LogDataModel
+	err := req.BindJSON(&mds)
+	if err != nil {
+		cmn.Error("请求参数有误", err)
+		return gweb.Error500(err.Error())
+	}
+
+	for i := 0; i < len(mds); i++ {
+		md := &mds[i]
+		md.Text = cmn.Trim(md.Text)
+		if md.Text != "" {
+			addDataModelLog(md)
+			if conf.IsClusterMode() {
+				go TransferGlc(conf.LogTransferAdd, md.ToJson()) // 转发其他GLC服务
+			}
+		}
+	}
+	return gweb.Ok()
+
+}
+
+// 添加日志（JSON提交方式）
 func JsonLogAddController(req *gweb.HttpRequest) *gweb.HttpResult {
 
 	// 开启API秘钥校验时才检查
@@ -25,10 +61,11 @@ func JsonLogAddController(req *gweb.HttpRequest) *gweb.HttpResult {
 	}
 
 	md.Text = cmn.Trim(md.Text)
-	addDataModelLog(md)
-
-	if conf.IsClusterMode() {
-		go TransferGlc(conf.LogTransferAdd, md.ToJson()) // 转发其他GLC服务
+	if md.Text != "" {
+		addDataModelLog(md)
+		if conf.IsClusterMode() {
+			go TransferGlc(conf.LogTransferAdd, md.ToJson()) // 转发其他GLC服务
+		}
 	}
 
 	return gweb.Ok()
@@ -70,4 +107,41 @@ func addDataModelLog(data *logdata.LogDataModel) {
 	}
 
 	engine.AddLogDataModel(data)
+
+	// 缓存系统名称备用查询
+	if data.System != "" {
+		if muSystem.TryLock() {
+			defer muSystem.Unlock()
+			mapSystem[data.System] = time.Now().UnixMilli()
+		}
+	}
+
+}
+
+// GetAllSystemNames 取近1天缓存的系统名称并清理
+func GetAllSystemNames() []string {
+	var mapSet = make(map[string]bool)
+	var rs []string
+	var dels []string
+	now := time.Now().UnixMilli()
+	muSystem.Lock()
+	defer muSystem.Unlock()
+	for key, value := range mapSystem {
+		if now-value < 86400000 {
+			tmp := cmn.ToLower(key)
+			if _, has := mapSet[tmp]; !has {
+				rs = append(rs, key) // 一天内
+				mapSet[tmp] = true
+			}
+		} else {
+			dels = append(dels, key) // 超过1天待删除
+		}
+	}
+	for _, key := range dels {
+		delete(mapSystem, key)
+	}
+	sort.Slice(rs, func(i, j int) bool {
+		return rs[i] < rs[j]
+	})
+	return rs
 }

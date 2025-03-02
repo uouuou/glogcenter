@@ -14,7 +14,7 @@
 <br>
 
 <p align="center">
-    <a href="https://golang.google.cn"><img src="https://img.shields.io/badge/golang-1.21.4-brightgreen.svg"></a>
+    <a href="https://golang.google.cn"><img src="https://img.shields.io/badge/golang-1.23.1-brightgreen.svg"></a>
     <a href="https://hub.docker.com/r/gotoeasy/glc"><img src="https://img.shields.io/docker/pulls/gotoeasy/glc"></a>
     <a href="https://github.com/gotoeasy/glogcenter/releases/latest"><img src="https://img.shields.io/github/release/gotoeasy/glogcenter.svg"></a>
     <a href="https://github.com/gotoeasy/glogcenter/blob/master/LICENSE"><img src="https://img.shields.io/github/license/gotoeasy/glogcenter"></a>
@@ -23,7 +23,7 @@
 <br>
 <br>
 国外仓库地址： https://github.com/gotoeasy/glogcenter <br>
-国内(仅同步)： https://gitee.com/gotoeasy/glogcenter
+国内（同步）： https://gitee.com/gotoeasy/glogcenter
 <br>
 <br>
 演示地址(网络可能不稳定)： https://glc.gotoeasy.top
@@ -43,6 +43,13 @@
 - [x] 上至央企大项目下至本地调试，已历经众多案例磨炼，表现出色 `【生产级别品质】`
 
 
+## 概要图
+<div align=center>
+<img src="https://gotoeasy.github.io/screenshots/glogcenter/glcsummary.png"/>
+</div>
+
+
+## 部分截图
 <div align=center>
 <img src="https://gotoeasy.github.io/screenshots/glogcenter/glogcenter.png"/>
 <img src="https://gotoeasy.github.io/screenshots/glogcenter/storage.png"/>
@@ -55,7 +62,6 @@
 ## `docker`单机部署模式简易示例
 ```shell
 # 快速体验（其中通过GLC_TEST_MODE=true开启测试模式，页面上会显示生成测试数据的按钮，方便测试或快速体验）
-# 镜像拉取有困难？呃...问下智能助手
 docker run -d -p 8080:8080 -e GLC_TEST_MODE=true gotoeasy/glc
 
 # 外挂数据目录
@@ -74,16 +80,16 @@ docker run -d -p 8080:8080 -v /glc:/glogcenter gotoeasy/glc
 
 # 服务1
 docker run -d -p 8080:8080 -e GLC_CLUSTER_MODE=true -e GLC_SERVER_URL=http://172.27.59.51:8080 \
-       -e GLC_CLUSTER_URLS=http://172.27.59.51:8080;http://172.27.59.52:8080;http://172.27.59.53:8080 \
-       gotoeasy/glc
+  -e GLC_CLUSTER_URLS=http://172.27.59.51:8080;http://172.27.59.52:8080;http://172.27.59.53:8080 \
+  gotoeasy/glc
 # 服务2
 docker run -d -p 8080:8080 -e GLC_CLUSTER_MODE=true -e GLC_SERVER_URL=http://172.27.59.52:8080 \
-       -e GLC_CLUSTER_URLS=http://172.27.59.51:8080;http://172.27.59.52:8080;http://172.27.59.53:8080 \
-       gotoeasy/glc
+  -e GLC_CLUSTER_URLS=http://172.27.59.51:8080;http://172.27.59.52:8080;http://172.27.59.53:8080 \
+  gotoeasy/glc
 # 服务3
 docker run -d -p 8080:8080 -e GLC_CLUSTER_MODE=true -e GLC_SERVER_URL=http://172.27.59.53:8080 \
-       -e GLC_CLUSTER_URLS=http://172.27.59.51:8080;http://172.27.59.52:8080;http://172.27.59.53:8080 \
-       gotoeasy/glc
+  -e GLC_CLUSTER_URLS=http://172.27.59.51:8080;http://172.27.59.52:8080;http://172.27.59.53:8080 \
+  gotoeasy/glc
 ```
 
 
@@ -142,16 +148,16 @@ curl -X POST -d '{"system":"demo", "date":"2023-01-01 01:02:03.456","text":"demo
 <dependency>
     <groupId>top.gotoeasy</groupId>
     <artifactId>glc-logback-appender</artifactId>
-    <version>0.16.0</version>
+    <version>0.17.1</version>
 </dependency>
 ```
 
 ```xml
 <!-- logback配置例子1，发送至 glogcenter -->
 <appender name="GLC" class="top.gotoeasy.framework.glc.logback.appender.GlcHttpJsonAppender">
-    <glcApiUrl>http://127.0.0.1:8080/glc/v1/log/add</glcApiUrl> <!-- 可通过环境变量 GLC_API_URL 设定 -->
-    <glcApiKey>X-GLC-AUTH:glogcenter</glcApiKey>                <!-- 可通过环境变量 GLC_API_KEY 设定 -->
-    <system>demo</system>                                       <!-- 可通过环境变量 GLC_SYSTEM 设定 -->
+    <glcApiUrl>http://127.0.0.1:8080/</glcApiUrl> <!--可通过环境变量 GLC_API_URL 设定-->
+    <glcApiKey>X-GLC-AUTH:glogcenter</glcApiKey>  <!--可通过环境变量 GLC_API_KEY 设定-->
+    <system>demo</system>                         <!--可通过环境变量 GLC_SYSTEM 设定 -->
     <layout>
         <pattern><![CDATA[%m %n]]></pattern>
     </layout>
@@ -204,7 +210,7 @@ curl -X POST -d '{"system":"demo", "date":"2023-01-01 01:02:03.456","text":"demo
 # 方式1）通过环境变量自动配置，程序直接使用cmn.Debug(...)写日志即可
 export GLC_ENABLE=true # 此配置默认false，要发送日志中心必须配置为true
 export GLC_ENABLE_CONSOLE_LOG=true # 默认true，控制台不打印时配置为false
-export GLC_API_URL='http://127.0.0.1:8080/glc/v1/log/add' # 未配置时将取消发送
+export GLC_API_URL='http://127.0.0.1:8080/' # 未配置时将取消发送
 export GLC_API_KEY='X-GLC-AUTH:glogcenter' # 这是默认值，按需修改
 export GLC_SYSTEM=default  # 默认default，按需修改
 export GLC_LOG_LEVEL=debug # 日志级别（debug/info/warn/error）
@@ -219,8 +225,8 @@ import "github.com/gotoeasy/glang/cmn"
 func main() {
     // 这里用手动初始化替代环境变量自动配置方式，更多选项详见GlcOptions字段说明
     cmn.SetGlcClient(cmn.NewGlcClient(&cmn.GlcOptions{
-        ApiUrl:      "http://ip:port/glc/v1/log/add",
-        Enable:      true,
+        ApiUrl:      "http://127.0.0.1:8080/",
+        Enable:      "true",
     }))
 
     cmn.Debug("这是Debug级别日志")
@@ -238,7 +244,7 @@ func main() {
 # 支持以下环境变量配置
 export GLC_ENABLE=true # 默认false，要发送日志中心必须配置为true
 export GLC_ENABLE_CONSOLE_LOG=true # 默认true，控制台不打印时配置为false
-export GLC_API_URL='http://127.0.0.1:8080/glc/v1/log/add' # 未配置时将取消发送
+export GLC_API_URL='http://127.0.0.1:8080/' # 未配置时将取消发送
 export GLC_API_KEY='X-GLC-AUTH:glogcenter' # 这是默认值，按需修改
 export GLC_SYSTEM=default  # 默认default，按需修改
 export GLC_LOG_LEVEL=debug # 日志级别（debug/info/warn/error），默认debug
@@ -261,22 +267,67 @@ glc.error("gd参数顺序无关", gd, "用法如同log库，但对GlcData做了�
 ```
 
 
+## 支持零侵入收集docker容器日志 (适用`0.17.0`及以上版本)
+```shell
+# 1) 使用 fluentd 收集日志（为啥？因为较高版本docker已默认支持）
+# 本仓库中 fluent.conf 是简单配置示意，其中包含转发日志到GLC
+# 官方镜像的时区不合适，懒得改可直接用 gotoeasy/fluentd:v1.17-1-zh 替代
+docker run -d -p 24224:24224 -p 24224:24224/udp \
+       -v ./fluent.conf:/fluentd/etc/fluent.conf fluentd:v1.17-1
+
+# 2) 运行容器时指定日志驱动，指向 fluentd 服务端口
+docker run -d -p --log-driver=fluentd --log-opt fluentd-address=192.168.169.170:24224 <你的镜像>
+
+# 已经搞定啦，fluentd会把日志发到GLC （这个必开就不用说了）
+# 接下来，去折腾 fluent.conf 就行，举一反三，但凡 fluentd 支持收集的东西都可以框进来
+
+# 当然，这种日志在显示上有一定不足，但瑕不掩瑜，有时这么做还是很值得的
+```
+
+
+
 ## 更新履历
 
 ### 开发版`latest`
 
 - [ ] 日志审计、告警
-- [ ] 集群支持动态删减节点（或是页面管理删除）
 
+
+### 版本`0.17.4`
+
+- [x] 修复已知问题（#63）
+
+### 版本`0.17.3`
+
+- [x] 优化修复一些已知问题（#57 #58 等）
+
+### 版本`0.17.2`
+
+- [x] 修复：条件检索可能存在个别数据查不到
+- [x] 取消用户词典参数`GLC_DICT_DIR`的支持，配置不当会影响分词影响检索结果令人困惑，得不偿失
+- [x] 镜像缩小等优化
+
+
+### 版本`0.17.1`
+
+- [x] 支持自定义分词字典
+- [x] 增加字典目录环境变量`GLC_DICT_DIR`，支持多个`*.txt`字典文件。比如环境变量设定为`/opt`，启动时使用`-v /your-dict-dir:/opt`映射好字典目录就行
+- [x] 一些细节优化
+
+### 版本`0.17.0`
+
+- [x] 零侵入支持`docker`容器日志、文件等各种日志的收集
+- [x] 增加接口 `/glc/v1/log/addBatch`，支持一次接收多条日志
+- [x] 升级使用`Go1.23.1`进行编译
+
+
+<details>
+<summary><strong><mark>更多历史版本更新履历</mark></strong></summary> 
 
 ### 版本`0.16.0`
 
 - [x] 分词优化
 - [x] 大幅提升建索引速度（强烈推荐使用固态硬盘）
-
-
-<details>
-<summary><strong><mark>更多历史版本更新履历</mark></strong></summary> 
 
 ### 版本`0.15.2`
 

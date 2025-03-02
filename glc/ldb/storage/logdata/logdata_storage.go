@@ -41,18 +41,21 @@ type LogDataStorage struct {
 
 var zeroUint32Bytes []byte = cmn.Uint32ToBytes(0)
 var ldbMu sync.Mutex
-var mapStorage map[string](*LogDataStorage)
+
+var mapStorage sync.Map
 var mapStorageMu sync.Mutex
 
 func init() {
-	mapStorage = make(map[string](*LogDataStorage))
 	cmn.OnExit(onExit) // 优雅退出
 }
 
 func getCacheStore(cacheName string) *LogDataStorage {
-	cacheStore := mapStorage[cacheName]
-	if cacheStore != nil && !cacheStore.IsClose() {
-		return cacheStore // 缓存中未关闭的存储对象
+	value, ok := mapStorage.Load(cacheName)
+	if ok && value != nil {
+		cacheStore := value.(*LogDataStorage)
+		if !cacheStore.IsClose() {
+			return cacheStore // 缓存中未关闭的存储对象
+		}
 	}
 	return nil
 }
@@ -94,7 +97,7 @@ func NewLogDataStorage(storeName string) *LogDataStorage { // 存储器，文档
 	store.leveldb = db
 	store.loadMetaData()                        // 初始化件数等信息
 	status.UpdateStorageStatus(storeName, true) // 更新状态：当前日志仓打开
-	mapStorage[cacheName] = store               // 缓存起来
+	mapStorage.Store(cacheName, store)          // 缓存起来
 
 	// 消费就绪
 	go store.readyGo()
@@ -137,15 +140,16 @@ func (s *LogDataStorage) readyGo() {
 			}
 			s.saveLogData(data) // 保存日志数据
 		default:
-			// 空时再生成索引，多协程跑起来加快速度，再来一次单条同步用于判断，有空则生成直到全部完成
-			for i := 0; i < conf.GetGoMaxProcessIdx()-1; i++ {
-				go s.createInvertedIndex() // 多协程跑起来加快速度
-			}
+			// 【确保索引顺序，取消多协程创建索引】
+			// // 空时再生成索引，多协程跑起来加快速度，再来一次单条同步用于判断，有空则生成直到全部完成
+			// for i := 0; i < conf.GetGoMaxProcessIdx()-1; i++ {
+			// 	go s.createInvertedIndex() // 多协程跑起来加快速度
+			// }
 			n := s.createInvertedIndex() // 生成反向索引
 
 			// 索引生成完成后，等待接收保存日志
 			if n < 1 {
-				cmn.Info("空闲等待接收日志")
+				cmn.Debug("空闲等待接收日志")
 				data := <-s.storeChan // 没有索引可生成时，等待storeChan
 				s.wg.Done()
 				if data == nil {
@@ -217,8 +221,8 @@ func (s *LogDataStorage) createInvertedIndex() int {
 	kws := tokenizer.CutForSearchEx(tgtStr, adds, nil) // 两数组参数的元素可以重复或空白，会被判断整理
 
 	// 每个关键词都创建反向索引
+	idxw := indexword.NewWordIndexStorage(s.StoreName())
 	for _, word := range kws {
-		idxw := indexword.NewWordIndexStorage(s.StoreName())
 		idxw.Add(word, cmn.StringToUint32(docm.Id, 0)) // 日志ID加入索引
 	}
 	// cmn.Debug("创建日志索引：", cmn.StringToUint32(docm.Id, 0))
@@ -308,7 +312,7 @@ func (s *LogDataStorage) Close() {
 	s.wg.Add(1)                                    // 通道消息计数
 	s.storeChan <- nil                             // 通道正在在阻塞等待接收，给个nil让它接收后关闭
 	s.leveldb.Close()                              // 走到这里时没有db操作了，可以关闭
-	mapStorage[s.storeName] = nil                  // 设空，下回GetStorage时自动再创建
+	mapStorage.Delete(s.storeName)                 // 设空，下回GetStorage时自动再创建
 	status.UpdateStorageStatus(s.storeName, false) // 更新状态：当前日志仓关闭
 
 	cmn.Info("关闭LogDataStorage：", s.storeName+cmn.PathSeparator()+s.subPath)
@@ -376,11 +380,12 @@ func (s *LogDataStorage) IsClose() bool {
 }
 
 func onExit() {
-	for k := range mapStorage {
-		s := mapStorage[k]
-		if s != nil {
-			s.Close()
+	mapStorage.Range(func(key, value any) bool {
+		if value != nil {
+			cacheStore := value.(*LogDataStorage)
+			cacheStore.Close()
 		}
-	}
+		return true
+	})
 	cmn.Info("退出LogDataStorage")
 }

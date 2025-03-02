@@ -20,31 +20,36 @@ import (
 )
 
 type WordIndexStorage struct {
-	storeName    string      // 存储目录
-	subPath      string      // 存储目录下的相对路径（存放数据）
-	leveldb      *leveldb.DB // leveldb
-	lastTime     int64       // 最后一次访问时间
-	indexedCount uint32      // 已建索引件数
-	closing      bool        // 是否关闭中状态
-	mu           sync.Mutex  // 锁
+	storeName      string      // 存储目录
+	subPath        string      // 存储目录下的相对路径（存放数据）
+	leveldb        *leveldb.DB // leveldb
+	lastTime       int64       // 最后一次访问时间
+	indexedCount   uint32      // 已建索引件数
+	closing        bool        // 是否关闭中状态
+	mu             sync.Mutex  // 锁
+	mapWordCounter sync.Map    // 单词索引计数器
+	mapWordCountMu sync.Mutex  // 锁
+
 }
 
 var zeroUint32Bytes []byte = cmn.Uint32ToBytes(0)
 var zeroUint16Bytes []byte = cmn.Uint16ToBytes(0) // 索引件数的key
 
 var idxMu sync.Mutex
-var mapStorage map[string](*WordIndexStorage)
+var mapStorage sync.Map
 var mapStorageMu sync.Mutex
 
 func init() {
-	mapStorage = make(map[string](*WordIndexStorage))
 	cmn.OnExit(onExit) // 优雅退出
 }
 
 func getStorage(cacheName string) *WordIndexStorage {
-	cacheStore := mapStorage[cacheName]
-	if cacheStore != nil && !cacheStore.IsClose() {
-		return cacheStore // 缓存中未关闭的存储对象
+	value, ok := mapStorage.Load(cacheName)
+	if ok && value != nil {
+		cacheStore := value.(*WordIndexStorage)
+		if !cacheStore.IsClose() {
+			return cacheStore // 缓存中未关闭的存储对象
+		}
 	}
 	return nil
 }
@@ -87,7 +92,7 @@ func NewWordIndexStorage(storeName string) *WordIndexStorage { // 存储器，�
 	store.leveldb = db
 	store.loadIndexedCount()                    // 加载已建索引件数
 	status.UpdateStorageStatus(storeName, true) // 更新状态：当前日志仓打开
-	mapStorage[cacheName] = store               // 缓存起来
+	mapStorage.Store(cacheName, store)          // 缓存起来
 
 	// 逐秒判断，若闲置超时则自动关闭
 	go store.autoCloseWhenMaxIdle()
@@ -132,7 +137,7 @@ func (s *WordIndexStorage) SaveIndexedCount(count uint32) error {
 // GetTotalCount 取关键词索引当前的文档数
 func (s *WordIndexStorage) GetTotalCount(word string) uint32 {
 	wordBytes := cmn.StringToBytes(word)
-	bt, err := s.leveldb.Get(com.JoinBytes(wordBytes, zeroUint32Bytes), nil) // TODO 是否有性能问题?
+	bt, err := s.leveldb.Get(com.JoinBytes(wordBytes, zeroUint32Bytes), nil)
 	if err != nil {
 		return 0
 	}
@@ -144,13 +149,40 @@ func (s *WordIndexStorage) setTotalCount(word string, cnt uint32) error {
 	return s.leveldb.Put(com.JoinBytes(cmn.StringToBytes(word), zeroUint32Bytes), cmn.Uint32ToBytes(cnt), nil)
 }
 
+func (s *WordIndexStorage) getWwordCounter(word string) *atomic.Value {
+	counter, ok := s.mapWordCounter.Load(word)
+	if ok {
+		return counter.(*atomic.Value)
+	}
+
+	s.mapWordCountMu.Lock()
+	defer s.mapWordCountMu.Unlock()
+	newCounter := new(atomic.Value)
+	newCounter.Store(s.GetTotalCount(word))
+	s.mapWordCounter.Store(word, newCounter)
+	return newCounter
+}
+
+func (s *WordIndexStorage) increaseWwordCount(word string) uint32 {
+	counter := s.getWwordCounter(word)
+	cnt := counter.Load().(uint32)
+	newCnt := cnt + 1
+	for {
+		if counter.CompareAndSwap(cnt, newCnt) {
+			break
+		}
+		cnt = counter.Load().(uint32)
+		newCnt = cnt + 1
+	}
+	return newCnt
+}
+
 // Add 添加关键词反向索引
 func (s *WordIndexStorage) Add(word string, docId uint32) error {
 
 	// 加关键词反向索引
 	s.lastTime = time.Now().Unix()
-	seq := s.GetTotalCount(word)
-	seq++
+	seq := s.increaseWwordCount(word) // 取出已递增加1的数量
 	err := s.leveldb.Put(com.JoinBytes(cmn.StringToBytes(word), cmn.Uint32ToBytes(seq)), cmn.Uint32ToBytes(docId), nil)
 	if err != nil {
 		cmn.Error("保存关键词反向索引失败", err)
@@ -203,10 +235,10 @@ func (s *WordIndexStorage) Close() {
 	}
 
 	s.closing = true
-	s.leveldb.Close()             // 走到这里时没有db操作了，可以关闭
-	idxMu.Lock()                  // map锁
-	defer idxMu.Unlock()          // map解锁
-	mapStorage[s.storeName] = nil // 设空，下回GetStorage时自动再创建
+	s.leveldb.Close()              // 走到这里时没有db操作了，可以关闭
+	idxMu.Lock()                   // map锁
+	defer idxMu.Unlock()           // map解锁
+	mapStorage.Delete(s.storeName) // 设空，下回GetStorage时自动再创建
 
 	cmn.Info("关闭WordIndexStorage：", s.storeName+cmn.PathSeparator()+s.subPath)
 }
@@ -222,11 +254,12 @@ func (s *WordIndexStorage) IsClose() bool {
 }
 
 func onExit() {
-	for k := range mapStorage {
-		s := mapStorage[k]
-		if s != nil {
-			s.Close()
+	mapStorage.Range(func(key, value any) bool {
+		if value != nil {
+			cacheStore := value.(*WordIndexStorage)
+			cacheStore.Close()
 		}
-	}
+		return true
+	})
 	cmn.Info("退出WordIndexStorage")
 }
