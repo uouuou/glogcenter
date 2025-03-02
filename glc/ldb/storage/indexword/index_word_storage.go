@@ -3,6 +3,7 @@
  * 1）获取存储对象线程安全，带缓存无则创建有则直取，空闲超时自动关闭leveldb，再次获取时自动打开
  * 2）单线程调用设计，由日志存储器内部控制安全的调用，其他地方调用可能会有问题
  */
+
 package indexword
 
 import (
@@ -11,6 +12,7 @@ import (
 	"glc/ldb/status"
 	"glc/ldb/storage/indexdoc"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/gotoeasy/glang/cmn"
@@ -54,7 +56,7 @@ func getStorage(cacheName string) *WordIndexStorage {
 	return nil
 }
 
-// 获取存储对象，线程安全（带缓存无则创建有则直取）
+// NewWordIndexStorage 获取存储对象，线程安全（带缓存无则创建有则直取）
 func NewWordIndexStorage(storeName string) *WordIndexStorage { // 存储器，文档，自定义对象
 
 	// 缓存有则取用
@@ -149,6 +151,7 @@ func (s *WordIndexStorage) setTotalCount(word string, cnt uint32) error {
 	return s.leveldb.Put(com.JoinBytes(cmn.StringToBytes(word), zeroUint32Bytes), cmn.Uint32ToBytes(cnt), nil)
 }
 
+// getWwordCounter 取关键词计数器
 func (s *WordIndexStorage) getWwordCounter(word string) *atomic.Value {
 	counter, ok := s.mapWordCounter.Load(word)
 	if ok {
@@ -163,6 +166,7 @@ func (s *WordIndexStorage) getWwordCounter(word string) *atomic.Value {
 	return newCounter
 }
 
+// increaseWwordCount 增加关键词计数
 func (s *WordIndexStorage) increaseWwordCount(word string) uint32 {
 	counter := s.getWwordCounter(word)
 	cnt := counter.Load().(uint32)
@@ -253,6 +257,7 @@ func (s *WordIndexStorage) IsClose() bool {
 	return s.closing
 }
 
+// 关闭时处理
 func onExit() {
 	mapStorage.Range(func(key, value any) bool {
 		if value != nil {

@@ -16,17 +16,17 @@ import (
 var glcLatest string = ver.VERSION
 var glcOrigin string = ""
 
-// 查询是否开启智能助手
+// ChatAiController 查询是否开启智能助手
 func ChatAiController(req *gweb.HttpRequest) *gweb.HttpResult {
 	return gweb.Result(conf.IsEnableChatAi())
 }
 
-// 查询是否测试模式
+// TestModeController 查询是否测试模式
 func TestModeController(req *gweb.HttpRequest) *gweb.HttpResult {
 	return gweb.Result(conf.IsTestMode())
 }
 
-// 查询版本信息
+// VersionController 查询版本信息
 func VersionController(req *gweb.HttpRequest) *gweb.HttpResult {
 	rs := cmn.OfMap("version", ver.VERSION, "latest", glcLatest) // version当前版本号，latest最新版本号
 	return gweb.Result(rs)
@@ -39,7 +39,7 @@ func SetOrigin(req *gweb.HttpRequest) {
 	}
 }
 
-// 查询日志仓名称列表
+// StorageNamesController 查询日志仓名称列表
 func StorageNamesController(req *gweb.HttpRequest) *gweb.HttpResult {
 	if (!InWhiteList(req) && InBlackList(req)) || (conf.IsEnableLogin() && GetUsernameByToken(req.GetToken()) == "") {
 		return gweb.Error403() // 黑名单检查、登录检查
@@ -49,7 +49,7 @@ func StorageNamesController(req *gweb.HttpRequest) *gweb.HttpResult {
 	return gweb.Result(rs)
 }
 
-// 查询系统名称列表
+// SystemNamesController 查询系统名称列表
 func SystemNamesController(req *gweb.HttpRequest) *gweb.HttpResult {
 	if (!InWhiteList(req) && InBlackList(req)) || (conf.IsEnableLogin() && GetUsernameByToken(req.GetToken()) == "") {
 		return gweb.Error403() // 黑名单检查、登录检查
@@ -99,7 +99,7 @@ func SystemNamesController(req *gweb.HttpRequest) *gweb.HttpResult {
 	return gweb.Ok() // 都有权限，不返回结果
 }
 
-// 查询日志仓信息列表
+// StorageListController 查询日志仓信息列表
 func StorageListController(req *gweb.HttpRequest) *gweb.HttpResult {
 	token := req.GetToken()
 	if (!InWhiteList(req) && InBlackList(req)) || (conf.IsEnableLogin() && GetUsernameByToken(token) == "") {
@@ -113,7 +113,7 @@ func StorageListController(req *gweb.HttpRequest) *gweb.HttpResult {
 	return gweb.Result(rs)
 }
 
-// 删除指定日志仓
+// StorageDeleteController 删除指定日志仓
 func StorageDeleteController(req *gweb.HttpRequest) *gweb.HttpResult {
 	if (!InWhiteList(req) && InBlackList(req)) || (conf.IsEnableLogin() && GetUsernameByToken(req.GetToken()) == "") {
 		return gweb.Error403() // 黑名单检查、登录检查

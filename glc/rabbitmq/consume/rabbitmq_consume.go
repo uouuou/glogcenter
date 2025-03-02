@@ -1,13 +1,14 @@
 /**
  * RabbitMQ简单模式消费者封装
  */
+
 package consume
 
 import (
 	"glc/conf"
 
 	"github.com/gotoeasy/glang/cmn"
-	"github.com/streadway/amqp"
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type RabbitMQ struct {
@@ -18,7 +19,7 @@ type RabbitMQ struct {
 	closing   bool
 }
 
-// 实例化(简单模式)
+// NewSimpleRabbitMQ 实例化(简单模式)
 func NewSimpleRabbitMQ() (*RabbitMQ, error) {
 	rabbitmq := &RabbitMQ{
 		QueueName: conf.GetAmqpQueueName(),
@@ -38,7 +39,7 @@ func NewSimpleRabbitMQ() (*RabbitMQ, error) {
 	return rabbitmq, nil
 }
 
-// 关闭连接
+// Close 关闭连接
 func (r *RabbitMQ) Close() {
 	if r == nil || r.closing {
 		return
@@ -53,7 +54,7 @@ func (r *RabbitMQ) Close() {
 	}
 }
 
-// 简单模式生产者
+// SimplePublish 简单模式生产者
 func (r *RabbitMQ) SimplePublish(message string) {
 	_, err := r.channel.QueueDeclare(
 		r.QueueName,
@@ -79,7 +80,7 @@ func (r *RabbitMQ) SimplePublish(message string) {
 	)
 }
 
-// 简单模式消费者
+// StartConsume 简单模式消费者
 func (r *RabbitMQ) StartConsume(fnJsonLogHandle func(string, error) bool) {
 	_, err := r.channel.QueueDeclare(
 		r.QueueName, // 队列名

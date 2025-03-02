@@ -168,7 +168,7 @@ async function logout() {
 }
 
 const clickLogo = () => {
-  window.open('https://github.com/gotoeasy/glogcenter', '_blank');
+  window.open('/search', '_self');
 };
 
 function checkVersion() {

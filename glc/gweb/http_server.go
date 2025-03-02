@@ -2,6 +2,7 @@ package gweb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"glc/conf"
 	"glc/ldb"
@@ -142,7 +143,7 @@ func Run() {
 
 	// 启动Web服务
 	err := httpServer.ListenAndServe()
-	if err != nil && err != http.ErrServerClosed {
+	if err != nil && !errors.Is(err, http.ErrServerClosed) {
 		cmn.Error(err.Error()) // 启动失败的话打印错误信息后退出
 	}
 }

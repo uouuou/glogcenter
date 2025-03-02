@@ -37,7 +37,7 @@ func JoinBytes(bts ...[]byte) []byte {
 	return bytes.Join(bts, []byte(""))
 }
 
-// 取日志仓名列表，以“.”开头的默认忽略
+// GetStorageNames 取日志仓名列表，以“.”开头的默认忽略
 func GetStorageNames(path string, excludes ...string) []string {
 	fileinf, err := os.ReadDir(path)
 	if err != nil {
@@ -81,7 +81,7 @@ func GetDirInfo(path string) (uint32, int64, error) {
 	return count, size, err
 }
 
-// 当前日期加减天数后的yyyymmdd格式
+// GetYyyymmdd 当前日期加减天数后的yyyymmdd格式
 func GetYyyymmdd(days int) string {
 	return time.Now().AddDate(0, 0, days).Format("20060102")
 }
@@ -98,6 +98,7 @@ func Unique(s []string) []string {
 	return newS
 }
 
+// GetLocalGlcUrl 获取本地GLC服务地址
 func GetLocalGlcUrl() string {
 	if conf.GetServerUrl() != "" {
 		return conf.GetServerUrl()

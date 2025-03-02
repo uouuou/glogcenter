@@ -41,7 +41,7 @@
 
       </div>
     </div>
-    <div class="login-footer">Copyright © 2022-present gotoeasy.top</div>
+    <div class="login-footer">Copyright © 2025 LeusSystem</div>
   </div>
 </template>
 

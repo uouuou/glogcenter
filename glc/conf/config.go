@@ -4,6 +4,7 @@
  * 2）所有配置都有默认值以便直接使用
  * 3）所有配置都可以通过环境变量设定覆盖，方便自定义配置，方便容器化部署
  */
+
 package conf
 
 import (
@@ -99,17 +100,17 @@ type Config struct {
 	AryBlack             []string `json:"aryBlack" yaml:"aryBlack"`                         // 黑名单
 	IsTestMode           bool     `json:"testMode" yaml:"testMode"`                         // 是否测试模式，默认false
 	MulitLineSearch      bool     `json:"mulitLineSearch" yaml:"mulitLineSearch"`           // 是否开启多行搜索，默认false
-	LogLevel             string   `json:"logLevel" yaml:"logLevel"`
-	EnableCors           bool     `json:"enableCors" yaml:"enableCors"`           // 是否允许跨域，默认false
-	PageSize             int      `json:"pageSize" yaml:"pageSize"`               // 每次检索件数，默认100（有效范围1~1000）
-	SessionTimeout       int      `json:"session_timeout" yaml:"sessionTimeout"`  // 登录会话超时时间，单位分钟
-	TestMod              bool     `json:"testMod" yaml:"testMod"`                 // 是否测试模式
-	Username             string   `json:"username" yaml:"username"`               // 登录用户名
-	Password             string   `json:"password" yaml:"password"`               // 登录密码
-	IpAddCity            bool     `json:"ipAddCity" yaml:"ipAddCity"`             // 是否开启IP地址转城市，默认false
-	GoMaxProcessIdx      int      `json:"goMaxProcessIdx" yaml:"goMaxProcessIdx"` // 创建索引使用的最大协程数量，默认是最大CPU数量（设定值不在实际数量范围是按最大看待）
-	NearSearchSize       int      `json:"nearSearchSize" yaml:"nearSearchSize"`   // 定位相邻检索的查询件数，默认200（有效范围50~1000）
-	EnableChatAi         bool     `json:"enableChatAi" yaml:"enableChatAi"`       // 是否开启聊天机器人
+	LogLevel             string   `json:"logLevel" yaml:"logLevel"`                         // 日志级别，默认INFO
+	EnableCors           bool     `json:"enableCors" yaml:"enableCors"`                     // 是否允许跨域，默认false
+	PageSize             int      `json:"pageSize" yaml:"pageSize"`                         // 每次检索件数，默认100（有效范围1~1000）
+	SessionTimeout       int      `json:"session_timeout" yaml:"sessionTimeout"`            // 登录会话超时时间，单位分钟
+	TestMod              bool     `json:"testMod" yaml:"testMod"`                           // 是否测试模式
+	Username             string   `json:"username" yaml:"username"`                         // 登录用户名
+	Password             string   `json:"password" yaml:"password"`                         // 登录密码
+	IpAddCity            bool     `json:"ipAddCity" yaml:"ipAddCity"`                       // 是否开启IP地址转城市，默认false
+	GoMaxProcessIdx      int      `json:"goMaxProcessIdx" yaml:"goMaxProcessIdx"`           // 创建索引使用的最大协程数量，默认是最大CPU数量（设定值不在实际数量范围是按最大看待）
+	NearSearchSize       int      `json:"nearSearchSize" yaml:"nearSearchSize"`             // 定位相邻检索的查询件数，默认200（有效范围50~1000）
+	EnableChatAi         bool     `json:"enableChatAi" yaml:"enableChatAi"`                 // 是否开启聊天机器人
 }
 
 func init() {
@@ -260,55 +261,56 @@ func init() {
 	goMaxProcessIdx = setting.GoMaxProcessIdx
 }
 
-// 取配置： 是否开启GLC智能助手
+// IsEnableChatAi 取配置： 是否开启GLC智能助手
 func IsEnableChatAi() bool {
 	return enableChatAi
 }
 
-// 取配置： 定位相邻检索的查询件数，可通过环境变量“GLC_NEAR_SEARCH_SIZE”设定，默认200件
+// GetNearSearchSize 取配置： 定位相邻检索的查询件数，可通过环境变量“GLC_NEAR_SEARCH_SIZE”设定，默认200件
 func GetNearSearchSize() int {
 	return nearSearchSize
 }
 
-// 取配置： IP是否要自动附加城市信息，默认false
+// IsIpAddCity 取配置： IP是否要自动附加城市信息，默认false
 func IsIpAddCity() bool {
 	return ipAddCity
 }
 
-// 取配置： 登录会话超时时间，可通过环境变量“GLC_SESSION_TIMEOUT”设定，默认“30”分钟
+// GetSessionTimeout 取配置： 登录会话超时时间，可通过环境变量“GLC_SESSION_TIMEOUT”设定，默认“30”分钟
 func GetSessionTimeout() int {
 	return sessionTimeout
 }
 
-// 取配置： 白名单，可通过环境变量“GLC_WHITE_LIST”设定，默认“”
+// GetWhiteList 取配置： 白名单，可通过环境变量“GLC_WHITE_LIST”设定，默认“”
 func GetWhiteList() []string {
 	return aryWhite
 }
 
-// 取配置： 黑名单，可通过环境变量“GLC_BLACK_LIST”设定，默认“”
+// GetBlackList 取配置： 黑名单，可通过环境变量“GLC_BLACK_LIST”设定，默认“”
 func GetBlackList() []string {
 	return aryBlack
 }
 
-// 取配置： 令牌盐，可通过环境变量“GLC_TOKEN_SALT”设定，默认“”
+// GetTokenSalt 取配置： 令牌盐，可通过环境变量“GLC_TOKEN_SALT”设定，默认“”
 func GetTokenSalt() string {
 	return tokenSalt
 }
 
-// 取配置： 是否测试模式，可通过环境变量“GLC_TEST_MODE”设定，默认false
+// IsTestMode 取配置： 是否测试模式，可通过环境变量“GLC_TEST_MODE”设定，默认false
 func IsTestMode() bool {
 	return testMode
 }
 
-// 取配置： 是否检索日志的全部行，可通过环境变量“GLC_SEARCH_MULIT_LINE”设定，默认false
+// IsMulitLineSearch 取配置： 是否检索日志的全部行，可通过环境变量“GLC_SEARCH_MULIT_LINE”设定，默认false
 func IsMulitLineSearch() bool {
 	return mulitLineSearch
 }
 
-// 取配置： 每次检索件数，可通过环境变量“GLC_PAGE_SIZE”设定，默认100（有效范围1~1000）
+// GetPageSize 取配置： 每次检索件数，可通过环境变量“GLC_PAGE_SIZE”设定，默认100（有效范围1~1000）
 func GetPageSize() int {
 	return pageSize
 }
+
 func getNearSearchSizeConf(n int) int {
 	if n < 50 {
 		n = 50
@@ -328,17 +330,17 @@ func getPageSizeConf(n int) int {
 	return n
 }
 
-// 取配置： 是否允许跨域，可通过环境变量“GLC_ENABLE_CROSS”设定，默认false
+// IsEnableCors 取配置： 是否允许跨域，可通过环境变量“GLC_ENABLE_CROSS”设定，默认false
 func IsEnableCors() bool {
 	return enableCors
 }
 
-// 取配置： 创建索引使用的最大协程数量，默认是最大CPU数量（设定值不在实际数量范围是按最大看待）
+// GetGoMaxProcessIdx 取配置： 创建索引使用的最大协程数量，默认是最大CPU数量（设定值不在实际数量范围是按最大看待）
 func GetGoMaxProcessIdx() int {
 	return goMaxProcessIdx
 }
 
-// 取配置： 使用的最大CPU数量，可通过环境变量“GLC_GOMAXPROCS”设定，默认最大CPU数量
+// GetGoMaxProcess 取配置： 使用的最大CPU数量，可通过环境变量“GLC_GOMAXPROCS”设定，默认最大CPU数量
 func GetGoMaxProcess() int {
 	return goMaxProcess
 }
@@ -350,52 +352,52 @@ func getGoMaxProcessConf(n int) int {
 	return n
 }
 
-// 取配置： 服务URL，集群配置时自动获取地址可能不对，可通过环境变量“GLC_ENABLE_BACKUP”设定，默认“”
+// GetServerUrl 取配置： 服务URL，集群配置时自动获取地址可能不对，可通过环境变量“GLC_ENABLE_BACKUP”设定，默认“”
 func GetServerUrl() string {
 	return serverUrl
 }
 
-// 取配置： 是否开启MINIO备份，可通过环境变量“GLC_ENABLE_BACKUP”设定，默认false
+// IsEnableBackup 取配置： 是否开启MINIO备份，可通过环境变量“GLC_ENABLE_BACKUP”设定，默认false
 func IsEnableBackup() bool {
 	return enableBackup
 }
 
-// 取配置： 日志中心分组名，可通过环境变量“GLC_GROUP”设定，默认“default”
+// GetGlcGroup 取配置： 日志中心分组名，可通过环境变量“GLC_GROUP”设定，默认“default”
 func GetGlcGroup() string {
 	return glcGroup
 }
 
-// 取配置： MINIO地址，可通过环境变量“GLC_MINIO_URL”设定，默认“”
+// GetMinioUrl 取配置： MINIO地址，可通过环境变量“GLC_MINIO_URL”设定，默认“”
 func GetMinioUrl() string {
 	return minioUrl
 }
 
-// 取配置： MINIO用户名，可通过环境变量“GLC_MINIO_USER”设定，默认“”
+// GetMinioUser 取配置： MINIO用户名，可通过环境变量“GLC_MINIO_USER”设定，默认“”
 func GetMinioUser() string {
 	return minioUser
 }
 
-// 取配置： MINIO密码，可通过环境变量“GLC_MINIO_PASS”设定，默认“”
+// GetMinioPassword 取配置： MINIO密码，可通过环境变量“GLC_MINIO_PASS”设定，默认“”
 func GetMinioPassword() string {
 	return minioPassword
 }
 
-// 取配置： MINIO桶名，可通过环境变量“GLC_MINIO_BUCKET”设定，默认“”
+// GetMinioBucket 取配置： MINIO桶名，可通过环境变量“GLC_MINIO_BUCKET”设定，默认“”
 func GetMinioBucket() string {
 	return minioBucket
 }
 
-// 取配置： 是否开启上传备份至MINIO服务器，可通过环境变量“GLC_ENABLE_UPLOAD_MINIO”设定，默认false
+// IsEnableUploadMinio 取配置： 是否开启上传备份至MINIO服务器，可通过环境变量“GLC_ENABLE_UPLOAD_MINIO”设定，默认false
 func IsEnableUploadMinio() bool {
 	return enableUploadMinio
 }
 
-// 取配置： 是否开启转发日志到其他GLC服务，可通过环境变量“GLC_CLUSTER_MODE”设定，默认false
+// IsClusterMode 取配置： 是否开启转发日志到其他GLC服务，可通过环境变量“GLC_CLUSTER_MODE”设定，默认false
 func IsClusterMode() bool {
 	return clusterMode
 }
 
-// 取配置： 从服务器地址，可通过环境变量“GLC_SLAVE_HOSTS”设定，默认“”
+// GetClusterUrls 取配置： 从服务器地址，可通过环境变量“GLC_SLAVE_HOSTS”设定，默认“”
 func GetClusterUrls() []string {
 	return clusterUrls
 }
@@ -415,17 +417,17 @@ func splitUrls(str string) {
 	})
 }
 
-// 取配置： 是否开启用户密码登录，可通过环境变量“GLC_ENABLE_LOGIN”设定，默认“false”
+// IsEnableLogin 取配置： 是否开启用户密码登录，可通过环境变量“GLC_ENABLE_LOGIN”设定，默认“false”
 func IsEnableLogin() bool {
 	return enableLogin
 }
 
-// 取配置： 登录用户名，可通过环境变量“GLC_USERNAME”设定，默认“glc”
+// GetUsername 取配置： 登录用户名，可通过环境变量“GLC_USERNAME”设定，默认“glc”
 func GetUsername() string {
 	return username
 }
 
-// 存取配置： 登录用户名，可通过环境变量“GLC_PASSWORD”设定，默认“glogcenter”
+// GetPassword 存取配置： 登录用户名，可通过环境变量“GLC_PASSWORD”设定，默认“glogcenter”
 func GetPassword() string {
 	return password
 }
@@ -433,7 +435,7 @@ func SetPassword(psw string) {
 	password = psw
 }
 
-// 取配置： 日志分仓时的保留天数(0~180)，0表示不自动删除，可通过环境变量“GLC_SAVE_DAYS”设定，默认180天
+// GetSaveDays 取配置： 日志分仓时的保留天数(0~180)，0表示不自动删除，可通过环境变量“GLC_SAVE_DAYS”设定，默认180天
 func GetSaveDays() int {
 	if saveDays < 0 {
 		saveDays = 0
@@ -444,77 +446,77 @@ func GetSaveDays() int {
 	return saveDays
 }
 
-// 取配置： rabbitMq消息文本是否为json格式，可通过环境变量“GLC_AMQP_JSON_FORMAT”设定，默认值“true”
+// IsAmqpJsonFormat 取配置： rabbitMq消息文本是否为json格式，可通过环境变量“GLC_AMQP_JSON_FORMAT”设定，默认值“true”
 func IsAmqpJsonFormat() bool {
 	return amqpJsonFormat
 }
 
-// 取配置： rabbitMq连接地址，可通过环境变量“GLC_AMQP_ADDR”设定，默认值“”
+// GetAmqpQueueName 取配置： rabbitMq连接地址，可通过环境变量“GLC_AMQP_ADDR”设定，默认值“”
 func GetAmqpQueueName() string {
 	return amqpQueueName
 }
 
-// 取配置： rabbitMq连接地址，可通过环境变量“GLC_AMQP_ADDR”设定，默认值“”
+// GetAmqpAddr 取配置： rabbitMq连接地址，可通过环境变量“GLC_AMQP_ADDR”设定，默认值“”
 func GetAmqpAddr() string {
 	return amqpAddr
 }
 
-// 取配置： 是否开启rabbitMq消费者接收日志，可通过环境变量“GLC_ENABLE_AMQP_CONSUME”设定，默认值“false”
+// IsEnableAmqpConsume 取配置： 是否开启rabbitMq消费者接收日志，可通过环境变量“GLC_ENABLE_AMQP_CONSUME”设定，默认值“false”
 func IsEnableAmqpConsume() bool {
 	return enableAmqpConsume
 }
 
-// 取配置： web服务API秘钥的header键名，可通过环境变量“GLC_HEADER_SECURITY_KEY”设定，默认值“X-GLC-AUTH”
+// IsEnableWebGzip 取配置： web服务API秘钥的header键名，可通过环境变量“GLC_HEADER_SECURITY_KEY”设定，默认值“X-GLC-AUTH”
 func IsEnableWebGzip() bool {
 	return enableWebGzip
 }
 
-// 取配置： web服务API秘钥的header键名，可通过环境变量“GLC_HEADER_SECURITY_KEY”设定，默认值“X-GLC-AUTH”
+// IsEnableSecurityKey 取配置： web服务API秘钥的header键名，可通过环境变量“GLC_HEADER_SECURITY_KEY”设定，默认值“X-GLC-AUTH”
 func IsEnableSecurityKey() bool {
 	return enableSecurityKey
 }
 
-// 取配置： web服务API秘钥的header键名，可通过环境变量“GLC_HEADER_SECURITY_KEY”设定，默认值“X-GLC-AUTH”
+// GetHeaderSecurityKey 取配置： web服务API秘钥的header键名，可通过环境变量“GLC_HEADER_SECURITY_KEY”设定，默认值“X-GLC-AUTH”
 func GetHeaderSecurityKey() string {
 	return headerSecurityKey
 }
 
-// 取配置： web服务API秘钥，可通过环境变量“GLC_SECURITY_KEY”设定，默认值“glogcenter”
+// GetSecurityKey 取配置： web服务API秘钥，可通过环境变量“GLC_SECURITY_KEY”设定，默认值“glogcenter”
 func GetSecurityKey() string {
 	return securityKey
 }
 
-// 取配置： web服务端口，可通过环境变量“GLC_CONTEXT_PATH”设定，默认值“8080”
+// GetContextPath 取配置： web服务端口，可通过环境变量“GLC_CONTEXT_PATH”设定，默认值“8080”
 func GetContextPath() string {
 	return contextPath
 }
 
-// 取配置： 服务IP，可通过环境变量“GLC_SERVER_IP”设定，默认值“”，自动获取
+// GetServerIp 取配置： 服务IP，可通过环境变量“GLC_SERVER_IP”设定，默认值“”，自动获取
 func GetServerIp() string {
 	return serverIp
 }
 
-// 取配置： web服务端口，可通过环境变量“GLC_SERVER_PORT”设定，默认值“8080”
+// GetServerPort 取配置： web服务端口，可通过环境变量“GLC_SERVER_PORT”设定，默认值“8080”
 func GetServerPort() string {
 	return serverPort
 }
 
-// 取配置：存储根目录，可通过环境变量“GLC_STORE_ROOT”设定，默认值“/glogcenter”
+// GetStorageRoot 取配置：存储根目录，可通过环境变量“GLC_STORE_ROOT”设定，默认值“/glogcenter”
 func GetStorageRoot() string {
 	return storeRoot
 }
 
-// 取配置：存储通道长度，可通过环境变量“GLC_STORE_CHAN_LENGTH”设定，默认值“64”
+// GetStoreChanLength 取配置：存储通道长度，可通过环境变量“GLC_STORE_CHAN_LENGTH”设定，默认值“64”
 func GetStoreChanLength() int {
 	return storeChanLength
 }
 
-// 取配置：最大闲置时间（秒），可通过环境变量“GLC_MAX_IDLE_TIME”设定，默认值“180”，超过闲置时间将自动关闭存储器，0时表示不关闭
+// GetMaxIdleTime 取配置：最大闲置时间（秒），可通过环境变量“GLC_MAX_IDLE_TIME”设定，默认值“180”，超过闲置时间将自动关闭存储器，0时表示不关闭
 func GetMaxIdleTime() int {
 	return maxIdleTime
 }
 
-// 取配置：存储名是否自动添加日期（日志量大通常按日单位区分存储），可通过环境变量“GLC_STORE_NAME_AUTO_ADD_DATE”设定，默认值“true”
+// IsStoreNameAutoAddDate 取配置：存储名是否自动添加日期（日志量大通常按日单位区分存储），可通过环境变量“GLC_STORE_NAME_AUTO_ADD_DATE”设定，默认值“true”
 func IsStoreNameAutoAddDate() bool {
 	return storeNameAutoAddDate
 }
