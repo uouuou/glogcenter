@@ -12,7 +12,6 @@ import (
 	"github.com/gotoeasy/glang/cmn"
 )
 
-
 var mapSystem = make(map[string]int64)
 var muSystem sync.Mutex
 
@@ -45,7 +44,7 @@ func JsonLogAddBatchController(req *gweb.HttpRequest) *gweb.HttpResult {
 
 }
 
-// 添加日志（JSON提交方式）
+// JsonLogAddController 添加日志（JSON提交方式）
 func JsonLogAddController(req *gweb.HttpRequest) *gweb.HttpResult {
 
 	// 开启API秘钥校验时才检查
@@ -58,6 +57,11 @@ func JsonLogAddController(req *gweb.HttpRequest) *gweb.HttpResult {
 	if err != nil {
 		cmn.Error("请求参数有误", err)
 		return gweb.Error500(err.Error())
+	}
+
+	// 客户端IP地址没有时
+	if md.ClientIp == "" {
+		md.ClientIp = req.GetClientIp()
 	}
 
 	md.Text = cmn.Trim(md.Text)

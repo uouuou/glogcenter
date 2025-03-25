@@ -95,3 +95,8 @@ func (r *HttpRequest) RequestUrlPath() string {
 func (r *HttpRequest) BindJSON(obj any) error {
 	return r.GinCtx.BindJSON(obj)
 }
+
+// GetClientIp 获取客户端IP
+func (r *HttpRequest) GetClientIp() string {
+	return r.GinCtx.ClientIP()
+}
