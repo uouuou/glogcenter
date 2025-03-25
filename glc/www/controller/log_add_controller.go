@@ -63,6 +63,9 @@ func JsonLogAddController(req *gweb.HttpRequest) *gweb.HttpResult {
 	if md.ClientIp == "" {
 		md.ClientIp = req.GetClientIp()
 	}
+	if md.ServerIp == "" {
+		md.ServerIp = md.ClientIp
+	}
 
 	md.Text = cmn.Trim(md.Text)
 	if md.Text != "" {
