@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/gotoeasy/glang/cmn"
+	"github.com/tidwall/gjson"
 )
 
 var mapSystem = make(map[string]int64)
@@ -66,9 +67,9 @@ func JsonLogAddController(req *gweb.HttpRequest) *gweb.HttpResult {
 	if md.ServerIp == "" {
 		md.ServerIp = md.ClientIp
 	}
-
 	md.Text = cmn.Trim(md.Text)
 	if md.Text != "" {
+		md.Text = cleanNestedJSON(md.Text)
 		addDataModelLog(md)
 		if conf.IsClusterMode() {
 			go TransferGlc(conf.LogTransferAdd, md.ToJson()) // 转发其他GLC服务
@@ -76,6 +77,17 @@ func JsonLogAddController(req *gweb.HttpRequest) *gweb.HttpResult {
 	}
 
 	return gweb.Ok()
+}
+
+// cleanNestedJSON 清理嵌套的JSON结构
+func cleanNestedJSON(text string) string {
+	// 首先检查是否为有效的JSON
+	if gjson.Valid(text) {
+		// 对于嵌套的JSON结构，也可以使用@pretty修饰符
+		return gjson.Get(text, "@pretty").String()
+	}
+
+	return text
 }
 
 // JsonLogTransferAddController 添加日志（来自数据转发）
