@@ -6,6 +6,7 @@ import (
 	"glc/ldb"
 	"glc/ldb/storage/logdata"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -69,7 +70,7 @@ func JsonLogAddController(req *gweb.HttpRequest) *gweb.HttpResult {
 	}
 	md.Text = cmn.Trim(md.Text)
 	if md.Text != "" {
-		md.Text = cleanNestedJSON(md.Text)
+		md.Text = cleanJSONEscapesAndNewlines(md.Text)
 		addDataModelLog(md)
 		if conf.IsClusterMode() {
 			go TransferGlc(conf.LogTransferAdd, md.ToJson()) // 转发其他GLC服务
@@ -79,15 +80,21 @@ func JsonLogAddController(req *gweb.HttpRequest) *gweb.HttpResult {
 	return gweb.Ok()
 }
 
-// cleanNestedJSON 清理嵌套的JSON结构
-func cleanNestedJSON(text string) string {
-	// 首先检查是否为有效的JSON
-	if gjson.Valid(text) {
-		// 对于嵌套的JSON结构，也可以使用@pretty修饰符
-		return gjson.Get(text, "@pretty").String()
+// 清理JSON中的转义字符和换行符
+func cleanJSONEscapesAndNewlines(jsonStr string) string {
+	// 验证是否为有效JSON
+	if !gjson.Valid(jsonStr) {
+		return jsonStr
 	}
 
-	return text
+	// 使用@ugly生成紧凑JSON
+	minified := gjson.Get(jsonStr, "@ugly").String()
+
+	// 确保移除所有换行符
+	minified = strings.ReplaceAll(minified, "\n", "")
+	minified = strings.ReplaceAll(minified, "\r", "")
+
+	return minified
 }
 
 // JsonLogTransferAddController 添加日志（来自数据转发）
