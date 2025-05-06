@@ -23,9 +23,9 @@ const SysUserTransferChgPsw = "/v1/sysuser/transferChgPsw"
 const SysUserTransferDel = "/v1/sysuser/transferDel"
 const UserTransferLogin = "/v1/user/transferLogin"
 
-var storeRoot = "/glogcenter" // 【固定】容器化缘故，不适合修改
-var serverPort = "8080"       // 【固定】容器化缘故，不适合修改
-var contextPath = "/glc"      // 【固定】容器化缘故，不适合修改
+var storeRoot string = "/glogcenter" // 【固定】容器化缘故，不适合修改
+var serverPort string = "8080"       // 【固定】容器化缘故，不适合修改
+var contextPath string = "/glc"      // 【固定】容器化缘故，不适合修改
 var storeChanLength int
 var maxIdleTime int
 var storeNameAutoAddDate bool
