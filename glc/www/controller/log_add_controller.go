@@ -68,7 +68,6 @@ func JsonLogAddController(req *gweb.HttpRequest) *gweb.HttpResult {
 	}
 	md.Text = cmn.Trim(md.Text)
 	if md.Text != "" {
-		md.Text = OptimizedCleanNestedJSON(md.Text)
 		addDataModelLog(md)
 		if conf.IsClusterMode() {
 			go TransferGlc(conf.LogTransferAdd, md.ToJson()) // 转发其他GLC服务

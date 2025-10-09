@@ -1,4 +1,4 @@
-/**
+/****
  * 日志存储器
  * 1）以通道控制接收日志，ID自动递增作为键有序保存
  * 2）优先响应保存日志，闲时创建关键词反向索引
@@ -228,6 +228,83 @@ func (s *LogDataStorage) createInvertedIndex() int {
 	// cmn.Debug("创建日志索引：", cmn.StringToUint32(docm.Id, 0))
 
 	return 1
+}
+
+// ResetIndexedCount 将已建索引计数重置到指定值（用于手工恢复索引进度）
+// 注意：请确保传入的 newCount 不超过 TotalCount，且最好设置为“最后已完成索引的日志ID”。
+func (s *LogDataStorage) ResetIndexedCount(newCount uint32) {
+	if s == nil {
+		return
+	}
+	if newCount > s.TotalCount() {
+		newCount = s.TotalCount()
+	}
+	// 重置内存计数并持久化
+	s.muIdx.Lock()
+	s.indexedCount = newCount
+	s.savedIndexedCount = newCount
+	s.muIdx.Unlock()
+	idxw := indexword.NewWordIndexStorage(s.StoreName())
+	_ = idxw.SaveIndexedCount(newCount)
+	cmn.Info("重置索引进度:", s.StoreName(), ", indexedCount=", newCount, ", total=", s.TotalCount())
+}
+
+// ForceIndexAll 主动补建所有未完成的索引（立即循环执行，直到完成），
+// 对于缺失/损坏的日志会跳过，确保整体索引能继续推进。
+// 返回本次补建的条数。
+func (s *LogDataStorage) ForceIndexAll() int {
+	if s == nil || s.IsClose() {
+		return 0
+	}
+	built := 0
+	for {
+		// 读取下一条待建索引的ID，并推进指针（出错也前进，避免卡住）
+		s.muIdx.Lock()
+		if s.TotalCount() == 0 || s.indexedCount >= s.TotalCount() {
+			s.muIdx.Unlock()
+			break
+		}
+		nextId := s.indexedCount + 1
+		s.indexedCount++
+		s.muIdx.Unlock()
+
+		// 取日志数据
+		docm, err := s.GetLogDataModel(nextId)
+		if err != nil {
+			cmn.Error("ForceIndexAll: 获取日志模型失败，跳过 id=", nextId, ", ", err)
+			continue
+		}
+
+		// 关键词整理（与 createInvertedIndex 一致）
+		var adds []string
+		if docm.System != "" {
+			adds = append(adds, "~"+cmn.ToLower(docm.System))
+		}
+		if docm.LogLevel != "" {
+			adds = append(adds, "!"+cmn.ToLower(docm.LogLevel))
+		}
+		if docm.User != "" {
+			adds = append(adds, "@"+cmn.ToLower(docm.User))
+		}
+		tgtStr := docm.System + " " + docm.ServerName + " " + docm.ServerIp + " " + docm.ClientIp + " " + docm.TraceId + " " + docm.LogLevel + " " + docm.User
+		if docm.Detail != "" && conf.IsMulitLineSearch() {
+			tgtStr = tgtStr + " " + docm.Detail
+		} else {
+			tgtStr = tgtStr + " " + docm.Text
+		}
+		kws := tokenizer.CutForSearchEx(tgtStr, adds, nil)
+
+		// 写入反向索引
+		idxw := indexword.NewWordIndexStorage(s.StoreName())
+		for _, word := range kws {
+			idxw.Add(word, nextId)
+		}
+		built++
+	}
+	// 保存元数据，确保计数落盘
+	s.saveMetaData()
+	cmn.Info("ForceIndexAll 完成:", s.StoreName(), ", 本次补建条数=", built, ", indexedCount=", s.indexedCount, ", total=", s.TotalCount())
+	return built
 }
 
 func (s *LogDataStorage) autoCloseWhenMaxIdle() {

@@ -26,6 +26,11 @@
       :tid="tid" :data="tableData" :max-height="tableHeight" :height="tableHeight" class="c-gx-table c-glc-table"
       row-key="id">
       <template #$operation="{ row }">
+        <!-- 新增：继续索引 / 强制补建 / 从ID重建 -->
+        <el-button size="small" type="primary" @click="resume(row)">继续索引</el-button>
+        <el-button size="small" type="success" @click="forceResume(row)">强制补建</el-button>
+        <el-button size="small" @click="resetResume(row)">从ID重建</el-button>
+        <!-- 原有：删除 -->
         <el-button size="small" type="warning" @click="remove(row)">删除</el-button>
       </template>
     </GxTable>
@@ -105,6 +110,77 @@ async function remove(row) {
       showTableLoadding.value = false;
     });
   }
+}
+
+function callResumeApi(params, onDone) {
+  const url = `/v1/index/resume`;
+  showTableLoadding.value = true;
+  $post(url, params, null, { 'Content-Type': 'application/x-www-form-urlencoded' }).then(rs => {
+    console.log('resume:', rs);
+    if (rs.success) {
+      const r = rs.result || {};
+      const tip = [
+        r.info || '',
+        r.started ? '（已启动异步补建）' : '',
+        r.reset ? `；${r.reset}` : ''
+      ].join('');
+      $msg.info(tip || '已触发继续索引');
+      info.value = tip;
+      onDone && onDone(true, r);
+      // 触发一次刷新，便于看到 indexed/total 的变化
+      setTimeout(() => search(), 600);
+    } else if (rs.code == 403) {
+      userLogout();
+      router.push('/glc/login');
+      onDone && onDone(false);
+    } else {
+      $msg.error(rs.message || '触发继续索引失败');
+      onDone && onDone(false);
+    }
+  }).finally(() => {
+    showTableLoadding.value = false;
+  });
+}
+
+function resume(row) {
+  // 继续索引（不强制，只唤醒后台补建）
+  if (!row || !row.name) return;
+  callResumeApi({ storeName: row.name }, null);
+}
+
+function forceResume(row) {
+  // 强制补建（容错跳过坏记录，直到完成）
+  if (!row || !row.name) return;
+  callResumeApi({ storeName: row.name, force: 1 }, null);
+}
+
+async function resetResume(row) {
+  // 从指定ID重建（将进度重置为 fromId-1，然后开启补建）
+  if (!row || !row.name) return;
+  // 简单输入框获取 fromId（优先使用全局 $msg.prompt，如无则降级 window.prompt）
+  let fromId = null;
+  if ($msg && $msg.prompt) {
+    try {
+      const ret = await $msg.prompt(`请输入起始ID（将从该ID开始重建，实际会重置到 fromId-1）：`, '从ID重建', {
+        inputPattern: /^\d+$/,
+        inputErrorMessage: '请输入正整数ID',
+      });
+      if (ret && ret.value != null) {
+        fromId = (ret.value + '').trim();
+      }
+    } catch (e) {
+      return; // 取消
+    }
+  } else {
+    const v = window.prompt(`请输入起始ID（将从该ID开始重建，实际会重置到 fromId-1）：`, '');
+    if (v == null) return; // 取消
+    fromId = (v + '').trim();
+  }
+  if (!fromId || !/^\d+$/.test(fromId)) {
+    $msg.error('请输入有效的正整数ID');
+    return;
+  }
+  callResumeApi({ storeName: row.name, fromId, force: 1 }, null);
 }
 
 </script>

@@ -125,3 +125,19 @@ func (s *LogDataStorageHandle) TotalCount() uint32 {
 func (s *LogDataStorageHandle) GetStoreName() string {
 	return s.storage.StoreName()
 }
+
+// ForceIndexAll 主动补建所有未完成的索引，返回本次补建条数
+func (s *LogDataStorageHandle) ForceIndexAll() int {
+	if s.storage.IsClose() {
+		s.storage = logdata.NewLogDataStorage(s.storage.StoreName())
+	}
+	return s.storage.ForceIndexAll()
+}
+
+// ResetIndexedCount 重置已建索引进度到指定值
+func (s *LogDataStorageHandle) ResetIndexedCount(newCount uint32) {
+	if s.storage.IsClose() {
+		s.storage = logdata.NewLogDataStorage(s.storage.StoreName())
+	}
+	s.storage.ResetIndexedCount(newCount)
+}

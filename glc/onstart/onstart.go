@@ -58,6 +58,9 @@ func Run() {
 		gweb.RegisterController(method.POST, contextPath+conf.SysUserTransferSave, controller.UserTransferSaveController)        // [用户]转发保存
 		gweb.RegisterController(method.POST, contextPath+conf.SysUserTransferDel, controller.UserTransferDelController)          // [用户]转发删除
 
+		// 新增：指定仓（按日期）继续索引
+		gweb.RegisterController(method.POST, contextPath+"/v1/index/resume", controller.IndexResumeController)
+
 		// 集群操作接口
 		gweb.RegisterController(method.POST, contextPath+"/sys/cluster/info", controller.ClusterGetClusterInfoController)   // 获取集群信息
 		gweb.RegisterController(method.POST, contextPath+"/sys/cluster/save", controller.ClusterMasterSaveKvDataController) // 保存集群信息
